@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, User, Menu } from "lucide-react";
+import { Heart, Menu } from "lucide-react";
 import FavoritesModal from "@/components/modals/FavoritesModal";
 import ProfileModal from "@/components/modals/ProfileModal";
+import UserMenu from "@/components/auth/UserMenu";
 import MobileMenu from "./MobileMenu";
 import Container from "./Container";
 
@@ -77,34 +78,10 @@ export default function Header() {
               <Heart className="h-5 w-5" />
             </button>
 
-            {/* Profile / Account Icon */}
-            <button
-              onClick={() => setIsProfileOpen(true)}
-              className="flex items-center justify-center rounded-full p-2 text-muted transition-colors hover:bg-black/5 hover:text-primary cursor-pointer"
-              aria-label="User Profile"
-              title="User Profile"
-            >
-              <User className="h-5 w-5" />
-            </button>
-
-            {/* Vertical Divider */}
-            <div className="h-5 w-[1px] bg-divider mx-0.5 sm:mx-1 hidden sm:block" />
-
-            {/* Login Link */}
-            <Link
-              href="/auth/login"
-              className="hidden font-sans text-sm font-semibold text-primary transition-opacity hover:opacity-80 sm:block"
-            >
-              Log In
-            </Link>
-
-            {/* Sign Up Pill Button */}
-            <Link
-              href="/auth/register"
-              className="hidden sm:inline-flex rounded-full bg-primary px-5 py-2.5 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            >
-              Sign Up
-            </Link>
+            {/* User Menu / Auth Controls */}
+            <div className="hidden sm:block">
+              <UserMenu />
+            </div>
 
             {/* Mobile Hamburger Button */}
             <button
