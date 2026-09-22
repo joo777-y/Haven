@@ -59,7 +59,15 @@ export async function middleware(request: NextRequest) {
       pathname === "/auth/register" ||
       pathname === "/auth/forgot-password")
   ) {
-    const redirectUrl = new URL("/dashboard", request.url);
+    // Check authoritative database relationship: public.agents.profile_id = auth.uid()
+    const { data: agent } = await supabase
+      .from("agents")
+      .select("id")
+      .eq("profile_id", user.id)
+      .maybeSingle();
+
+    const destination = agent ? "/agent" : "/dashboard";
+    const redirectUrl = new URL(destination, request.url);
     return NextResponse.redirect(redirectUrl);
   }
 

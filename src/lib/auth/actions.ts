@@ -19,6 +19,39 @@ export interface ActionResponse<T = unknown> {
   errors?: Record<string, string[]>;
 }
 
+/**
+ * Validates that a redirect path is a safe relative internal application path.
+ * Rejects protocol-relative URLs (//example.com), backslashes (/\\), external schemes (http:, https:, javascript:), etc.
+ */
+function getSafeRedirectPath(
+  path: string | null | undefined,
+  fallback: string
+): string {
+  if (!path || typeof path !== "string") return fallback;
+  const trimmed = path.trim();
+  // Must start with exactly one '/' and not be followed by '/' or '\\', and have no protocol
+  if (
+    !trimmed.startsWith("/") ||
+    trimmed.startsWith("//") ||
+    trimmed.startsWith("/\\") ||
+    trimmed.includes("://") ||
+    trimmed.includes("\r") ||
+    trimmed.includes("\n")
+  ) {
+    return fallback;
+  }
+
+  try {
+    const parsed = new URL(trimmed, "http://localhost");
+    if (parsed.origin === "http://localhost" && parsed.pathname.startsWith("/")) {
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+  } catch {
+    return fallback;
+  }
+  return fallback;
+}
+
 export async function signInAction(
   formData: FormData
 ): Promise<ActionResponse<{ redirectTo: string }>> {
@@ -67,9 +100,7 @@ export async function signInAction(
     .maybeSingle();
 
   const defaultDestination = agent ? "/agent" : "/dashboard";
-  const targetRedirect = redirectParam && redirectParam.startsWith("/")
-    ? redirectParam
-    : defaultDestination;
+  const targetRedirect = getSafeRedirectPath(redirectParam, defaultDestination);
 
   revalidatePath("/", "layout");
   return {
