@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { Heart, FolderHeart, User, Briefcase, Plus } from "lucide-react";
+import { Heart, FolderHeart, User, Briefcase, Plus, MessageSquare } from "lucide-react";
 import { getUserRoleState } from "@/lib/auth/getRole";
 import Button from "@/components/ui/Button";
 
@@ -43,7 +43,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick Navigation Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Link
           href="/dashboard/saved"
           className="group rounded-xl border border-divider bg-surface p-6 transition-all hover:border-primary/40 hover:shadow-sm"
@@ -56,6 +56,21 @@ export default async function DashboardPage() {
           </h3>
           <p className="text-xs text-muted mt-1 leading-relaxed">
             View your bookmarked luxury residences and track market changes.
+          </p>
+        </Link>
+
+        <Link
+          href="/dashboard/inquiries"
+          className="group rounded-xl border border-divider bg-surface p-6 transition-all hover:border-primary/40 hover:shadow-sm"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10 text-secondary mb-4 group-hover:bg-secondary group-hover:text-white transition-colors">
+            <MessageSquare className="h-5 w-5" />
+          </div>
+          <h3 className="font-display text-lg font-semibold text-foreground">
+            My Inquiries
+          </h3>
+          <p className="text-xs text-muted mt-1 leading-relaxed">
+            Track communication and responses from listing advisors.
           </p>
         </Link>
 

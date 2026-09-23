@@ -28,6 +28,24 @@ export interface PropertyWithDetails extends PropertyRow {
   agents_public: AgentPublicRow | null;
 }
 
+// Joined inquiry representation for client and agent portals
+export interface InquiryWithDetails extends InquiryRow {
+  properties: {
+    id: string;
+    title: string;
+    slug: string;
+    price: number;
+    city: string;
+    country: string;
+    status: string;
+    property_images?: PropertyImageRow[];
+  } | null;
+  profiles?: {
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+}
+
 // Normalized presentation model for UI cards
 export interface PropertyCardData {
   id: string;

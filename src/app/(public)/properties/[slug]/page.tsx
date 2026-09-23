@@ -6,10 +6,13 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import PropertyGrid from "@/components/properties/PropertyGrid";
 import PropertyGallery from "@/components/properties/PropertyGallery";
+import FavoriteButton from "@/components/properties/FavoriteButton";
+import ContactAgentForm from "@/components/properties/ContactAgentForm";
 import type { Property } from "@/components/properties/PropertyCard";
 import {
   getPropertyBySlug,
   getSimilarProperties,
+  getUserFavoritePropertyIds,
 } from "@/lib/properties/queries";
 import {
   formatPropertyPrice,
@@ -75,16 +78,23 @@ export default async function PropertyDetailsPage({
     notFound();
   }
 
-  // Fetch up to 3 similar published properties in the same category or city
-  const similarProperties = await getSimilarProperties(
-    property.id,
-    property.property_type,
-    property.city,
-    3
-  );
+  // Fetch similar properties and user favorite IDs in parallel
+  const [similarProperties, userFavoriteIds] = await Promise.all([
+    getSimilarProperties(
+      property.id,
+      property.property_type,
+      property.city,
+      3
+    ),
+    getUserFavoritePropertyIds(),
+  ]);
+
+  const favoriteIdSet = new Set(userFavoriteIds);
+  const isCurrentSaved = favoriteIdSet.has(property.id);
 
   const similarCards: Property[] = similarProperties.map((p) => {
-    const formatted = formatPropertyCardData(p, false);
+    const isSaved = favoriteIdSet.has(p.id);
+    const formatted = formatPropertyCardData(p, isSaved);
     return {
       id: formatted.id,
       title: formatted.title,
@@ -98,7 +108,7 @@ export default async function PropertyDetailsPage({
       listingType: formatted.listingType,
       propertyType: formatted.propertyType,
       agent: formatted.agent,
-      isSaved: formatted.isSaved,
+      isSaved,
     };
   });
 
@@ -156,13 +166,22 @@ export default async function PropertyDetailsPage({
             </div>
           </div>
 
-          <div className="flex flex-col sm:items-end">
-            <span className="text-xs text-muted font-medium uppercase tracking-wider block">
-              Offering Price
-            </span>
-            <span className="font-display text-3xl sm:text-4xl font-bold text-primary tracking-tight">
-              {formattedPrice}
-            </span>
+          <div className="flex flex-col sm:items-end gap-3">
+            <div>
+              <span className="text-xs text-muted font-medium uppercase tracking-wider block">
+                Offering Price
+              </span>
+              <span className="font-display text-3xl sm:text-4xl font-bold text-primary tracking-tight">
+                {formattedPrice}
+              </span>
+            </div>
+
+            <FavoriteButton
+              propertyId={property.id}
+              initialIsSaved={isCurrentSaved}
+              variant="button"
+              showLabel
+            />
           </div>
         </div>
 
@@ -324,22 +343,12 @@ export default async function PropertyDetailsPage({
                 </div>
               )}
 
-              {/* Inquiry Action Placeholder (Wired in Step 7) */}
-              <div className="pt-2 border-t border-divider/60">
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="w-full flex items-center justify-center gap-2 text-xs"
-                  disabled
-                  title="Inquiry system will be connected in Step 7"
-                >
-                  <Mail className="h-4 w-4" />
-                  <span>Inquire About This Property</span>
-                </Button>
-                <p className="mt-2 text-center text-[11px] text-muted/60">
-                  Client inquiries will be available in Phase 08 Step 7.
-                </p>
-              </div>
+              {/* Contact Agent / Inquiry Form */}
+              <ContactAgentForm
+                propertyId={property.id}
+                propertyTitle={property.title}
+                agentName={agent?.full_name}
+              />
             </div>
           </div>
         </div>

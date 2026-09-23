@@ -6,7 +6,10 @@ import PropertyGrid from "@/components/properties/PropertyGrid";
 import PropertyFiltersBar from "@/components/properties/PropertyFiltersBar";
 import PropertyPagination from "@/components/properties/PropertyPagination";
 import Button from "@/components/ui/Button";
-import { getPublishedProperties } from "@/lib/properties/queries";
+import {
+  getPublishedProperties,
+  getUserFavoritePropertyIds,
+} from "@/lib/properties/queries";
 import { parseFilterParams } from "@/lib/validations/property";
 import { formatPropertyCardData } from "@/types/property";
 import type { Property } from "@/components/properties/PropertyCard";
@@ -28,12 +31,18 @@ export default async function PropertiesPage({
   const rawParams = await searchParams;
   const filters = parseFilterParams(rawParams);
 
-  // Server-side query through Step 1 Data Access Layer with RLS enforcement
-  const paginatedResult = await getPublishedProperties(filters);
+  // Parallel server queries: catalog and batch user favorite IDs (no N+1)
+  const [paginatedResult, userFavoriteIds] = await Promise.all([
+    getPublishedProperties(filters),
+    getUserFavoritePropertyIds(),
+  ]);
+
+  const favoriteIdSet = new Set(userFavoriteIds);
 
   // Transform database composite objects into UI presentation card items
   const cardProperties: Property[] = paginatedResult.data.map((item) => {
-    const formatted = formatPropertyCardData(item, false);
+    const isSaved = favoriteIdSet.has(item.id);
+    const formatted = formatPropertyCardData(item, isSaved);
     return {
       id: formatted.id,
       title: formatted.title,
@@ -47,7 +56,7 @@ export default async function PropertiesPage({
       listingType: formatted.listingType,
       propertyType: formatted.propertyType,
       agent: formatted.agent,
-      isSaved: formatted.isSaved,
+      isSaved,
     };
   });
 

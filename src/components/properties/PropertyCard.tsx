@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Heart, MapPin, Bed, Bath, Maximize2, Building2 } from "lucide-react";
 import Badge from "@/components/ui/Badge";
-import IconButton from "@/components/ui/IconButton";
+import FavoriteButton from "./FavoriteButton";
 
 export interface Property {
   id: string;
@@ -100,20 +100,12 @@ export default function PropertyCard({
             )}
           </div>
 
-          {/* UI-only Favorite Button (Wired in Step 4) */}
-          <IconButton
-            onClick={handleFavoriteClick}
-            aria-label={isSaved ? "Remove from saved" : "Save property"}
-            variant="ghost"
-            size="md"
-            className="bg-surface/80 text-primary backdrop-blur-md hover:bg-surface hover:scale-105 shadow-xs"
-          >
-            <Heart
-              className={`h-4 w-4 transition-colors ${
-                isSaved ? "fill-secondary text-secondary" : "text-primary"
-              }`}
-            />
-          </IconButton>
+          {/* Reusable Favorite Button */}
+          <FavoriteButton
+            propertyId={property.id}
+            initialIsSaved={property.isSaved}
+            onToggleSuccess={onSaveToggle ? () => onSaveToggle(property.id) : undefined}
+          />
         </div>
       </div>
 

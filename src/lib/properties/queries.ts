@@ -3,6 +3,7 @@ import type {
   PropertyWithDetails,
   PropertyFilters,
   PaginatedProperties,
+  InquiryWithDetails,
 } from "@/types/property";
 
 const UUID_REGEX =
@@ -279,21 +280,38 @@ export async function getAgentProperties(
 
 /**
  * Fetches a single property for editing by the agent.
- * Row Level Security ensures the agent can only access their own property.
+ * Row Level Security and agent_id verification ensure the agent can only access their own property.
  */
 export async function getPropertyForEdit(
   id: string
 ): Promise<PropertyWithDetails | null> {
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  const { data: agent } = await supabase
+    .from("agents")
+    .select("id")
+    .eq("profile_id", user.id)
+    .maybeSingle();
+
+  if (!agent) return null;
+
   const { data, error } = await supabase
     .from("properties")
     .select(PROPERTY_DETAILS_SELECT)
     .eq("id", id)
+    .eq("agent_id", agent.id)
     .maybeSingle();
 
-  if (error) {
-    console.error(`Error fetching property for edit (${id}):`, error);
+  if (error || !data) {
+    if (error) {
+      console.error(`Error fetching property for edit (${id}):`, error);
+    }
     return null;
   }
 
@@ -378,3 +396,149 @@ export async function getUserFavorites(
 
   return properties;
 }
+
+/**
+ * Fetches an array of property IDs favorited by the current authenticated user.
+ * Returns an empty array if the user is not authenticated.
+ * Avoids N+1 queries when rendering catalog or list pages.
+ */
+export async function getUserFavoritePropertyIds(
+  userId?: string
+): Promise<string[]> {
+  const supabase = await createClient();
+
+  let targetUserId = userId;
+  if (!targetUserId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+    targetUserId = user.id;
+  }
+
+  const { data, error } = await supabase
+    .from("favorites")
+    .select("property_id")
+    .eq("user_id", targetUserId);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((f) => f.property_id);
+}
+
+/**
+ * Fetches inquiries submitted by the current authenticated user.
+ * Row Level Security strictly scopes results to auth.uid() = user_id.
+ */
+export async function getUserInquiries(): Promise<InquiryWithDetails[]> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("inquiries")
+    .select(`
+      id,
+      user_id,
+      agent_id,
+      property_id,
+      message,
+      status,
+      created_at,
+      updated_at,
+      properties (
+        id,
+        title,
+        slug,
+        price,
+        city,
+        country,
+        status,
+        property_images (
+          id,
+          image_url,
+          is_cover,
+          sort_order
+        )
+      )
+    `)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching user inquiries:", error);
+    return [];
+  }
+
+  return (data || []) as unknown as InquiryWithDetails[];
+}
+
+/**
+ * Fetches inquiries received for properties owned by the current authenticated agent.
+ * Row Level Security and agent ownership ensure an agent only sees their own listings' inquiries.
+ */
+export async function getAgentInquiries(): Promise<InquiryWithDetails[]> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data: agent } = await supabase
+    .from("agents")
+    .select("id")
+    .eq("profile_id", user.id)
+    .maybeSingle();
+
+  if (!agent) return [];
+
+  const { data, error } = await supabase
+    .from("inquiries")
+    .select(`
+      id,
+      user_id,
+      agent_id,
+      property_id,
+      message,
+      status,
+      created_at,
+      updated_at,
+      properties (
+        id,
+        title,
+        slug,
+        price,
+        city,
+        country,
+        status,
+        property_images (
+          id,
+          image_url,
+          is_cover,
+          sort_order
+        )
+      ),
+      profiles (
+        full_name,
+        avatar_url
+      )
+    `)
+    .eq("agent_id", agent.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching agent inquiries:", error);
+    return [];
+  }
+
+  return (data || []) as unknown as InquiryWithDetails[];
+}
+
