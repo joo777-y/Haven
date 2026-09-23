@@ -19,11 +19,12 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import Button from "@/components/ui/Button";
 import AuthModal from "./AuthModal";
-
+import { useRouter } from "next/navigation";
 export default function UserMenu() {
+  const router = useRouter();
   const { user, profile, agent, isAgent, isLoading, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  //const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on click outside
@@ -50,20 +51,18 @@ export default function UserMenu() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsAuthModalOpen(true)}
+            onClick={() => router.push("/auth/login")}
           >
             Sign In
           </Button>
-          <Link href="/auth/register">
-            <Button variant="primary" size="sm">
+            <Button
+              variant="primary" 
+              size="sm"
+              onClick={() => router.push("/auth/register")}
+              >
               Get Started
             </Button>
-          </Link>
         </div>
-        <AuthModal
-          isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
-        />
       </>
     );
   }

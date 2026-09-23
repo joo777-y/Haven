@@ -1,16 +1,22 @@
-"use client";
-
-import { use, useState } from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Container from "@/components/layout/Container";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import PropertyGrid from "@/components/properties/PropertyGrid";
-import AgentCard from "@/components/agents/AgentCard";
-import Modal from "@/components/ui/Modal";
-import Input from "@/components/ui/Input";
-import { mockProperties } from "@/data/properties";
-import { mockAgents } from "@/data/agents";
+import PropertyGallery from "@/components/properties/PropertyGallery";
+import type { Property } from "@/components/properties/PropertyCard";
+import {
+  getPropertyBySlug,
+  getSimilarProperties,
+} from "@/lib/properties/queries";
+import {
+  formatPropertyPrice,
+  formatPropertyArea,
+  formatPropertyCardData,
+  getCoverImageUrl,
+} from "@/types/property";
 import {
   MapPin,
   Bed,
@@ -19,43 +25,103 @@ import {
   Calendar,
   Car,
   CheckCircle2,
-  Heart,
-  Share2,
   ArrowLeft,
+  Building,
   Mail,
-  Send,
+  ShieldCheck,
 } from "lucide-react";
 
-export default function PropertyDetailsPage({
-  params,
-}: {
+interface PropertyDetailsPageProps {
   params: Promise<{ slug: string }>;
-}) {
-  const { slug } = use(params);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isSaved, setIsSaved] = useState(false);
-  const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
-  const [inquirySubmitted, setInquirySubmitted] = useState(false);
+}
 
-  const property = mockProperties.find((p) => p.slug === slug) || mockProperties[0];
-  const agent = mockAgents.find((a) => a.id === property.agentId) || mockAgents[0];
-  const similarProperties = mockProperties
-    .filter((p) => p.id !== property.id)
-    .slice(0, 3);
+export async function generateMetadata({
+  params,
+}: PropertyDetailsPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const property = await getPropertyBySlug(slug);
 
-  const handleInquirySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setInquirySubmitted(true);
-    setTimeout(() => {
-      setInquirySubmitted(false);
-      setIsInquiryModalOpen(false);
-    }, 2000);
+  if (!property) {
+    return {
+      title: "Property Not Found | HAVEN",
+      description: "The requested architectural property could not be found.",
+    };
+  }
+
+  const coverUrl = getCoverImageUrl(property.property_images, "");
+
+  return {
+    title: `${property.title} | HAVEN Luxury Real Estate`,
+    description:
+      property.description.slice(0, 160) ||
+      `Explore ${property.title}, a luxury ${property.property_type} in ${property.city}.`,
+    openGraph: {
+      title: property.title,
+      description: property.description.slice(0, 160),
+      images: coverUrl ? [{ url: coverUrl }] : [],
+    },
   };
+}
+
+export default async function PropertyDetailsPage({
+  params,
+}: PropertyDetailsPageProps) {
+  const { slug } = await params;
+
+  // Fetch the property via Step 1 Data Access Layer (enforces status = 'published')
+  const property = await getPropertyBySlug(slug);
+
+  if (!property) {
+    notFound();
+  }
+
+  // Fetch up to 3 similar published properties in the same category or city
+  const similarProperties = await getSimilarProperties(
+    property.id,
+    property.property_type,
+    property.city,
+    3
+  );
+
+  const similarCards: Property[] = similarProperties.map((p) => {
+    const formatted = formatPropertyCardData(p, false);
+    return {
+      id: formatted.id,
+      title: formatted.title,
+      slug: formatted.slug,
+      price: formatted.formattedPrice,
+      location: formatted.location,
+      image: formatted.coverImage,
+      beds: formatted.bedrooms,
+      baths: formatted.bathrooms,
+      area: formatted.formattedArea,
+      listingType: formatted.listingType,
+      propertyType: formatted.propertyType,
+      agent: formatted.agent,
+      isSaved: formatted.isSaved,
+    };
+  });
+
+  const location =
+    [property.neighborhood, property.city, property.country]
+      .filter(Boolean)
+      .join(", ") ||
+    property.city ||
+    "HAVEN Portfolio";
+
+  const formattedPrice = formatPropertyPrice(
+    property.price,
+    property.listing_type
+  );
+  const formattedArea = formatPropertyArea(property.area);
+
+  // Safe agent projection from agents_public
+  const agent = property.agents_public;
 
   return (
     <div className="py-10 space-y-12">
       <Container>
-        {/* Back Button */}
+        {/* Navigation Breadcrumb */}
         <Link
           href="/properties"
           className="inline-flex items-center gap-2 text-xs font-semibold text-muted hover:text-primary transition-colors mb-6"
@@ -64,111 +130,100 @@ export default function PropertyDetailsPage({
           <span>Back to Properties Catalog</span>
         </Link>
 
-        {/* Title Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-divider">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Badge variant="secondary">{property.badge || "Exclusive"}</Badge>
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                {property.listingType === "rent" ? "For Rent" : "For Sale"}
-              </span>
+        {/* Title & Price Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-divider">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <Badge variant="secondary" size="md" className="font-semibold">
+                {property.listing_type === "rent" ? "For Rent" : "For Sale"}
+              </Badge>
+              <Badge
+                variant="surface"
+                size="md"
+                className="capitalize text-muted font-medium"
+              >
+                {property.property_type}
+              </Badge>
             </div>
-            <h1 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-primary">
+
+            <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-primary">
               {property.title}
             </h1>
-            <div className="flex items-center gap-2 text-sm text-muted mt-2">
+
+            <div className="flex items-center gap-2 text-sm text-muted">
               <MapPin className="h-4 w-4 text-secondary shrink-0" />
-              <span>{property.location}</span>
+              <span>{location}</span>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3">
-            <div>
-              <span className="text-xs text-muted block">Price</span>
-              <span className="font-display text-3xl font-bold text-primary">
-                {property.price}
-                {property.listingType === "rent" && (
-                  <span className="text-sm font-normal text-muted font-sans ml-1">/ mo</span>
-                )}
-              </span>
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsSaved(!isSaved)}
-                className="gap-1.5"
-              >
-                <Heart
-                  className={`h-4 w-4 ${
-                    isSaved ? "fill-secondary text-secondary" : ""
-                  }`}
-                />
-                <span>{isSaved ? "Saved" : "Save"}</span>
-              </Button>
-            </div>
+          <div className="flex flex-col sm:items-end">
+            <span className="text-xs text-muted font-medium uppercase tracking-wider block">
+              Offering Price
+            </span>
+            <span className="font-display text-3xl sm:text-4xl font-bold text-primary tracking-tight">
+              {formattedPrice}
+            </span>
           </div>
         </div>
 
         {/* Photo Gallery Grid */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-3 aspect-[16/10] overflow-hidden rounded-2xl border border-divider bg-background">
-            <img
-              src={selectedImage || property.image}
-              alt={property.title}
-              className="h-full w-full object-cover transition-all duration-300"
-            />
-          </div>
-
-          <div className="flex md:flex-col gap-4 overflow-x-auto md:overflow-y-auto">
-            {property.gallery.map((img, idx) => (
-              <button
-                key={idx}
-                onClick={() => setSelectedImage(img)}
-                className={`relative aspect-[4/3] w-24 md:w-full overflow-hidden rounded-xl border transition-all cursor-pointer ${
-                  (selectedImage || property.image) === img
-                    ? "border-primary ring-2 ring-primary/20"
-                    : "border-divider opacity-70 hover:opacity-100"
-                }`}
-              >
-                <img src={img} alt={`Gallery ${idx + 1}`} className="h-full w-full object-cover" />
-              </button>
-            ))}
-          </div>
+        <div className="mt-8">
+          <PropertyGallery
+            images={property.property_images || []}
+            title={property.title}
+          />
         </div>
 
-        {/* Key Specs Bar */}
-        <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 rounded-2xl border border-divider bg-surface p-6 text-center">
+        {/* Key Architectural Specs Bar */}
+        <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 rounded-2xl border border-divider bg-surface p-6 text-center shadow-xs">
           <div className="space-y-1">
             <Bed className="h-5 w-5 text-secondary mx-auto" />
             <span className="text-xs text-muted block">Bedrooms</span>
-            <span className="font-sans text-base font-bold text-primary">{property.beds} Beds</span>
+            <span className="font-sans text-base font-bold text-primary">
+              {property.bedrooms !== null ? `${property.bedrooms} Beds` : "—"}
+            </span>
           </div>
+
           <div className="space-y-1">
             <Bath className="h-5 w-5 text-secondary mx-auto" />
             <span className="text-xs text-muted block">Bathrooms</span>
-            <span className="font-sans text-base font-bold text-primary">{property.baths} Baths</span>
+            <span className="font-sans text-base font-bold text-primary">
+              {property.bathrooms !== null ? `${property.bathrooms} Baths` : "—"}
+            </span>
           </div>
+
           <div className="space-y-1">
             <Maximize2 className="h-5 w-5 text-secondary mx-auto" />
             <span className="text-xs text-muted block">Total Area</span>
-            <span className="font-sans text-base font-bold text-primary">{property.area}</span>
+            <span className="font-sans text-base font-bold text-primary">
+              {formattedArea}
+            </span>
           </div>
+
           <div className="space-y-1">
             <Calendar className="h-5 w-5 text-secondary mx-auto" />
             <span className="text-xs text-muted block">Year Built</span>
-            <span className="font-sans text-base font-bold text-primary">{property.yearBuilt}</span>
+            <span className="font-sans text-base font-bold text-primary">
+              {property.year_built ?? "—"}
+            </span>
           </div>
+
           <div className="space-y-1">
             <Car className="h-5 w-5 text-secondary mx-auto" />
             <span className="text-xs text-muted block">Parking</span>
-            <span className="font-sans text-base font-bold text-primary">{property.parkingSpaces} Spaces</span>
+            <span className="font-sans text-base font-bold text-primary">
+              {property.parking_spaces !== null
+                ? `${property.parking_spaces} Spaces`
+                : "—"}
+            </span>
           </div>
+
           <div className="space-y-1">
-            <CheckCircle2 className="h-5 w-5 text-secondary mx-auto" />
+            <ShieldCheck className="h-5 w-5 text-secondary mx-auto" />
             <span className="text-xs text-muted block">Status</span>
-            <span className="font-sans text-base font-bold text-primary">Active</span>
+            <span className="font-sans text-base font-bold text-primary capitalize">
+              {property.status}
+            </span>
           </div>
         </div>
 
@@ -176,102 +231,134 @@ export default function PropertyDetailsPage({
         <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Left Column: Description & Features */}
           <div className="lg:col-span-2 space-y-10">
-            {/* Overview & Description */}
+            {/* Overview / Narrative */}
             <div className="space-y-4">
-              <h3 className="font-display text-2xl font-semibold text-primary">
+              <h2 className="font-display text-2xl font-semibold text-primary">
                 Architectural Narrative
-              </h3>
+              </h2>
               <p className="font-sans text-sm sm:text-base text-muted leading-relaxed whitespace-pre-line">
                 {property.description}
               </p>
             </div>
 
             {/* Features & Amenities */}
-            <div className="space-y-4 pt-6 border-t border-divider">
-              <h3 className="font-display text-2xl font-semibold text-primary">
+            <div className="space-y-4 pt-8 border-t border-divider">
+              <h2 className="font-display text-2xl font-semibold text-primary">
                 Features & Amenities
+              </h2>
+              {property.property_features &&
+              property.property_features.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {property.property_features.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-2.5 rounded-lg border border-divider/60 bg-surface/40 p-3 text-sm text-foreground shadow-2xs"
+                    >
+                      <CheckCircle2 className="h-4 w-4 text-secondary shrink-0" />
+                      <span>{item.feature}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs sm:text-sm text-muted/70 italic">
+                  No specific feature tags are registered for this residence.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Safe Advisor Contact Card */}
+          <div className="space-y-6">
+            <div className="sticky top-28 rounded-2xl border border-divider bg-surface p-6 space-y-6 shadow-xs">
+              <h3 className="font-display text-lg font-semibold text-primary">
+                Listing Advisor
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {property.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-sm text-foreground">
-                    <CheckCircle2 className="h-4 w-4 text-secondary shrink-0" />
-                    <span>{feature}</span>
+
+              {agent ? (
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    {/* Avatar */}
+                    {agent.avatar_url ? (
+                      <img
+                        src={agent.avatar_url}
+                        alt={agent.full_name}
+                        className="h-16 w-16 shrink-0 rounded-full object-cover border border-divider shadow-xs"
+                      />
+                    ) : (
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-secondary/10 font-display text-xl font-bold text-secondary border border-secondary/20">
+                        {agent.full_name.charAt(0)}
+                      </div>
+                    )}
+
+                    {/* Agent Public Info */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-display text-lg font-semibold text-foreground truncate">
+                        {agent.full_name}
+                      </h4>
+                      <p className="font-sans text-xs text-muted truncate mt-0.5">
+                        {agent.professional_title || "Licensed Real Estate Advisor"}
+                      </p>
+                      {agent.company_name && (
+                        <div className="mt-2 flex items-center gap-1.5 text-xs text-secondary font-medium">
+                          <Building className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{agent.company_name}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ))}
+
+                  {agent.bio && (
+                    <p className="text-xs text-muted/80 leading-relaxed border-t border-divider/60 pt-3 line-clamp-3">
+                      {agent.bio}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-foreground">
+                    HAVEN Concierge
+                  </p>
+                  <p className="text-xs text-muted leading-relaxed">
+                    Represented directly through the HAVEN private advisory desk.
+                  </p>
+                </div>
+              )}
+
+              {/* Inquiry Action Placeholder (Wired in Step 7) */}
+              <div className="pt-2 border-t border-divider/60">
+                <Button
+                  variant="primary"
+                  size="md"
+                  className="w-full flex items-center justify-center gap-2 text-xs"
+                  disabled
+                  title="Inquiry system will be connected in Step 7"
+                >
+                  <Mail className="h-4 w-4" />
+                  <span>Inquire About This Property</span>
+                </Button>
+                <p className="mt-2 text-center text-[11px] text-muted/60">
+                  Client inquiries will be available in Phase 08 Step 7.
+                </p>
               </div>
             </div>
           </div>
-
-          {/* Right Column: Agent Contact Box */}
-          <div className="space-y-6">
-            <div className="sticky top-28 rounded-2xl border border-divider bg-surface p-6 space-y-6 shadow-xs">
-              <h4 className="font-display text-lg font-semibold text-primary">
-                Listing Advisor
-              </h4>
-
-              <AgentCard agent={agent} />
-
-              <Button
-                variant="primary"
-                size="md"
-                className="w-full flex items-center justify-center gap-2"
-                onClick={() => setIsInquiryModalOpen(true)}
-              >
-                <Mail className="h-4 w-4" />
-                <span>Inquire About This Property</span>
-              </Button>
-            </div>
-          </div>
         </div>
 
-        {/* Similar Properties Section */}
-        <div className="mt-24 pt-12 border-t border-divider space-y-8">
-          <h3 className="font-display text-2xl font-semibold text-primary">
-            Similar Residences
-          </h3>
-          <PropertyGrid properties={similarProperties} />
-        </div>
-      </Container>
-
-      {/* Inquiry Modal */}
-      <Modal
-        isOpen={isInquiryModalOpen}
-        onClose={() => setIsInquiryModalOpen(false)}
-        title="Schedule a Private Viewing"
-        description={`Direct inquiry to ${agent.name} regarding ${property.title}`}
-      >
-        {inquirySubmitted ? (
-          <div className="py-8 text-center space-y-3">
-            <CheckCircle2 className="h-12 w-12 text-secondary mx-auto" />
-            <h4 className="font-display text-lg font-semibold text-foreground">
-              Inquiry Sent Successfully!
-            </h4>
-            <p className="text-xs text-muted">
-              {agent.name} will contact you directly within 24 hours.
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleInquirySubmit} className="space-y-4">
-            <Input label="Full Name" placeholder="John Doe" required />
-            <Input label="Email Address" type="email" placeholder="john@example.com" required />
-            <Input label="Phone Number" type="tel" placeholder="+1 (555) 000-0000" />
-            <div className="space-y-1.5">
-              <label className="block font-sans text-xs font-semibold text-primary">
-                Message
-              </label>
-              <textarea
-                rows={3}
-                defaultValue={`I would like to request a private showing or additional information for ${property.title}.`}
-                className="w-full rounded-lg border border-divider bg-surface p-3 font-sans text-sm text-foreground focus:border-primary focus:outline-none"
-              />
+        {/* Similar Residences Section */}
+        {similarCards.length > 0 && (
+          <div className="mt-24 pt-12 border-t border-divider space-y-8">
+            <div className="space-y-1">
+              <span className="font-display text-xs uppercase tracking-widest text-secondary font-semibold">
+                Curated Recommendations
+              </span>
+              <h3 className="font-display text-2xl sm:text-3xl font-semibold text-primary">
+                Similar Residences
+              </h3>
             </div>
-            <Button type="submit" variant="primary" size="md" className="w-full gap-2">
-              <Send className="h-4 w-4" />
-              <span>Send Inquiry</span>
-            </Button>
-          </form>
+            <PropertyGrid properties={similarCards} />
+          </div>
         )}
-      </Modal>
+      </Container>
     </div>
   );
 }

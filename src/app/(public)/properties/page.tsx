@@ -1,222 +1,126 @@
-"use client";
-
-import { useState, useMemo } from "react";
+import { Suspense } from "react";
+import Link from "next/link";
 import Container from "@/components/layout/Container";
 import SectionHeading from "@/components/ui/SectionHeading";
 import PropertyGrid from "@/components/properties/PropertyGrid";
-import Input from "@/components/ui/Input";
-import Select from "@/components/ui/Select";
+import PropertyFiltersBar from "@/components/properties/PropertyFiltersBar";
+import PropertyPagination from "@/components/properties/PropertyPagination";
 import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
-import { mockProperties } from "@/data/properties";
-import { Search, SlidersHorizontal, RotateCcw } from "lucide-react";
+import { getPublishedProperties } from "@/lib/properties/queries";
+import { parseFilterParams } from "@/lib/validations/property";
+import { formatPropertyCardData } from "@/types/property";
+import type { Property } from "@/components/properties/PropertyCard";
+import { Building2, RotateCcw } from "lucide-react";
 
-const sortOptions = [
-  { value: "newest", label: "Sort by: Newest Listed" },
-  { value: "price-asc", label: "Sort by: Price (Low to High)" },
-  { value: "price-desc", label: "Sort by: Price (High to Low)" },
-];
+export const metadata = {
+  title: "Properties Catalog | HAVEN Luxury Real Estate",
+  description:
+    "Explore HAVEN's curated portfolio of architectural properties, luxury villas, and exclusive residences for sale and rent.",
+};
 
-const listingTypeOptions = [
-  { value: "all", label: "All Listing Types" },
-  { value: "sale", label: "For Sale" },
-  { value: "rent", label: "For Rent" },
-];
+interface PropertiesPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
-const bedOptions = [
-  { value: "any", label: "Any Bedrooms" },
-  { value: "3", label: "3+ Bedrooms" },
-  { value: "4", label: "4+ Bedrooms" },
-  { value: "5", label: "5+ Bedrooms" },
-];
+export default async function PropertiesPage({
+  searchParams,
+}: PropertiesPageProps) {
+  const rawParams = await searchParams;
+  const filters = parseFilterParams(rawParams);
 
-export default function PropertiesPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [listingType, setListingType] = useState("all");
-  const [minBeds, setMinBeds] = useState("any");
-  const [sortBy, setSortBy] = useState("newest");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  // Server-side query through Step 1 Data Access Layer with RLS enforcement
+  const paginatedResult = await getPublishedProperties(filters);
 
-  // Filter & Sort Logic (Client-side)
-  const filteredProperties = useMemo(() => {
-    return mockProperties
-      .filter((property) => {
-        // Search Filter
-        const matchesQuery =
-          searchQuery.trim() === "" ||
-          property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          property.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          property.description.toLowerCase().includes(searchQuery.toLowerCase());
+  // Transform database composite objects into UI presentation card items
+  const cardProperties: Property[] = paginatedResult.data.map((item) => {
+    const formatted = formatPropertyCardData(item, false);
+    return {
+      id: formatted.id,
+      title: formatted.title,
+      slug: formatted.slug,
+      price: formatted.formattedPrice,
+      location: formatted.location,
+      image: formatted.coverImage,
+      beds: formatted.bedrooms ?? 0,
+      baths: formatted.bathrooms ?? 0,
+      area: formatted.formattedArea,
+      listingType: formatted.listingType,
+      propertyType: formatted.propertyType,
+      agent: formatted.agent,
+      isSaved: formatted.isSaved,
+    };
+  });
 
-        // Listing Type Filter
-        const matchesType =
-          listingType === "all" || property.listingType === listingType;
-
-        // Bedrooms Filter
-        const matchesBeds =
-          minBeds === "any" || property.beds >= parseInt(minBeds, 10);
-
-        return matchesQuery && matchesType && matchesBeds;
-      })
-      .sort((a, b) => {
-        if (sortBy === "price-asc") {
-          const priceA = parseInt(a.price.replace(/[^0-9]/g, ""), 10);
-          const priceB = parseInt(b.price.replace(/[^0-9]/g, ""), 10);
-          return priceA - priceB;
-        }
-        if (sortBy === "price-desc") {
-          const priceA = parseInt(a.price.replace(/[^0-9]/g, ""), 10);
-          const priceB = parseInt(b.price.replace(/[^0-9]/g, ""), 10);
-          return priceB - priceA;
-        }
-        // Default newest
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-  }, [searchQuery, listingType, minBeds, sortBy]);
-
-  // Pagination calculation
-  const totalPages = Math.ceil(filteredProperties.length / itemsPerPage) || 1;
-  const paginatedProperties = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredProperties.slice(start, start + itemsPerPage);
-  }, [filteredProperties, currentPage]);
-
-  const handleResetFilters = () => {
-    setSearchQuery("");
-    setListingType("all");
-    setMinBeds("any");
-    setSortBy("newest");
-    setCurrentPage(1);
-  };
+  const hasActiveFilters = Boolean(
+    filters.query ||
+      filters.listing_type ||
+      filters.property_type ||
+      filters.city ||
+      filters.min_price !== undefined ||
+      filters.max_price !== undefined ||
+      filters.bedrooms !== undefined ||
+      filters.bathrooms !== undefined ||
+      filters.min_area !== undefined ||
+      (filters.features && filters.features.length > 0)
+  );
 
   return (
     <div className="py-12 space-y-10">
       <Container>
+        {/* Header Area */}
         <SectionHeading
           subtitle="Real Estate Catalog"
           title="Explore Architectural Properties"
           description="Filter our curated collection by location, price, and specs to find your next sanctuary."
         />
 
-        {/* Filter Controls Panel */}
-        <div className="rounded-2xl border border-divider bg-surface p-5 shadow-xs space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-12 items-end">
-            {/* Search Input */}
-            <div className="md:col-span-5">
-              <Input
-                label="Search Keyword"
-                placeholder="Search by city, title, or address..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-                leftIcon={<Search className="h-4 w-4 text-muted" />}
-              />
-            </div>
+        {/* Filter Controls Panel (URL Synchronized) */}
+        <Suspense fallback={null}>
+          <PropertyFiltersBar totalCount={paginatedResult.count} />
+        </Suspense>
 
-            {/* Listing Type Select */}
-            <div className="md:col-span-3">
-              <Select
-                label="Type"
-                options={listingTypeOptions}
-                value={listingType}
-                onChange={(e) => {
-                  setListingType(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-
-            {/* Bedrooms Select */}
-            <div className="md:col-span-2">
-              <Select
-                label="Bedrooms"
-                options={bedOptions}
-                value={minBeds}
-                onChange={(e) => {
-                  setMinBeds(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-
-            {/* Reset Button */}
-            <div className="md:col-span-2">
-              <Button
-                variant="outline"
-                size="md"
-                className="w-full h-[42px] flex items-center justify-center gap-1.5 text-xs"
-                onClick={handleResetFilters}
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                <span>Reset</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Bar Bottom - Active Counts & Sort */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-divider/60">
-            <div className="flex items-center gap-2 text-xs text-muted">
-              <span>Showing</span>
-              <Badge variant="secondary" size="sm">
-                {filteredProperties.length} Properties
-              </Badge>
-            </div>
-
-            <div className="w-full sm:w-64">
-              <Select
-                options={sortOptions}
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Property Grid Display */}
+        {/* Property Grid Display or Empty State */}
         <div className="mt-8">
-          <PropertyGrid properties={paginatedProperties} />
+          {paginatedResult.count === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-divider bg-surface/50 py-16 px-6 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background border border-divider text-muted mb-4 shadow-xs">
+                <Building2 className="h-8 w-8 text-muted" />
+              </div>
+              <h3 className="font-display text-xl font-semibold text-foreground">
+                No residences found
+              </h3>
+              <p className="font-sans text-xs sm:text-sm text-muted max-w-sm mt-1.5 leading-relaxed">
+                {hasActiveFilters
+                  ? "We couldn't find any listings matching your specific filter criteria. Try adjusting or clearing your filters."
+                  : "There are currently no published residences available in the catalog. Please check back soon."}
+              </p>
+              {hasActiveFilters && (
+                <div className="mt-6">
+                  <Link href="/properties">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1.5 text-xs"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span>Clear All Filters</span>
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          ) : (
+            <PropertyGrid properties={cardProperties} />
+          )}
         </div>
 
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="mt-12 flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            >
-              Previous
-            </Button>
-            {Array.from({ length: totalPages }).map((_, i) => {
-              const pageNum = i + 1;
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => setCurrentPage(pageNum)}
-                  className={`h-9 w-9 rounded-lg font-sans text-xs font-semibold transition-colors cursor-pointer ${
-                    currentPage === pageNum
-                      ? "bg-primary text-white"
-                      : "bg-surface text-muted hover:bg-background border border-divider"
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            >
-              Next
-            </Button>
-          </div>
-        )}
+        {/* URL-based Pagination */}
+        <Suspense fallback={null}>
+          <PropertyPagination
+            currentPage={paginatedResult.page}
+            totalPages={paginatedResult.totalPages}
+          />
+        </Suspense>
       </Container>
     </div>
   );

@@ -183,6 +183,12 @@ export interface Database {
             referencedRelation: "agents";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "properties_agent_id_fkey";
+            columns: ["agent_id"];
+            referencedRelation: "agents_public";
+            referencedColumns: ["id"];
+          },
         ];
       };
       property_images: {
@@ -385,6 +391,12 @@ export interface Database {
             foreignKeyName: "inquiries_agent_id_fkey";
             columns: ["agent_id"];
             referencedRelation: "agents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "inquiries_agent_id_fkey";
+            columns: ["agent_id"];
+            referencedRelation: "agents_public";
             referencedColumns: ["id"];
           },
           {
