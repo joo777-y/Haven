@@ -15,6 +15,7 @@ import {
   LogOut,
   Briefcase,
   ChevronDown,
+  UserCheck,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import Button from "@/components/ui/Button";
@@ -196,6 +197,14 @@ export default function UserMenu() {
                 >
                   <MessageSquare className="h-4 w-4 text-muted" />
                   <span>Client Inquiries</span>
+                </Link>
+                <Link
+                  href="/agent/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-foreground hover:bg-surface transition-colors"
+                >
+                  <UserCheck className="h-4 w-4 text-muted" />
+                  <span>Advisor Profile</span>
                 </Link>
               </>
             ) : (

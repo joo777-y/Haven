@@ -18,6 +18,7 @@ import {
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import InquiryStatusControl from "@/components/inquiries/InquiryStatusControl";
+import AgentInquiryNote from "@/components/inquiries/AgentInquiryNote";
 import type { InquiryWithDetails, InquiryStatus } from "@/types/property";
 import { formatPropertyPrice, getCoverImageUrl } from "@/types/property";
 
@@ -244,99 +245,128 @@ export default function AgentInquiryManager({
               }
             );
 
-            return (
-              <div
-                key={inquiry.id}
-                className="rounded-2xl border border-divider bg-surface p-5 sm:p-6 space-y-4 transition-all hover:border-primary/30 shadow-xs"
-              >
-                {/* Associated Property Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-divider/60">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative h-12 w-16 sm:h-14 sm:w-20 shrink-0 overflow-hidden rounded-lg border border-divider bg-background">
-                      {coverUrl ? (
-                        <Image
-                          src={coverUrl}
-                          alt={property?.title || "Property image"}
-                          fill
-                          unoptimized={!isSupabase}
-                          sizes="80px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-muted">
-                          <Building2 className="h-5 w-5" />
+                const buyerPhone = inquiry.profiles?.phone || inquiry.buyer_phone || null;
+                const emailInMsg = inquiry.message?.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || null;
+                const buyerEmail = inquiry.profiles?.email || inquiry.buyer_email || emailInMsg || null;
+
+                return (
+                  <div
+                    key={inquiry.id}
+                    className="rounded-2xl border border-divider bg-surface p-5 sm:p-6 space-y-4 transition-all hover:border-primary/30 shadow-xs"
+                  >
+                    {/* Associated Property Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-divider/60">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="relative h-12 w-16 sm:h-14 sm:w-20 shrink-0 overflow-hidden rounded-lg border border-divider bg-background">
+                          {coverUrl ? (
+                            <Image
+                              src={coverUrl}
+                              alt={property?.title || "Property image"}
+                              fill
+                              unoptimized={!isSupabase}
+                              sizes="80px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-muted">
+                              <Building2 className="h-5 w-5" />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    <div className="min-w-0">
-                      {property ? (
-                        <Link
-                          href={`/properties/${property.slug}`}
-                          className="font-display text-sm sm:text-base font-semibold text-foreground hover:text-secondary truncate block transition-colors"
-                        >
-                          {property.title}
-                        </Link>
-                      ) : (
-                        <span className="font-display text-sm font-semibold text-muted">
-                          Unpublished or Removed Listing
-                        </span>
-                      )}
-                      <p className="text-xs text-muted">
-                        {property ? (
-                          <>
-                            <span>
-                              {property.city}, {property.country}
+                        <div className="min-w-0">
+                          {property ? (
+                            <Link
+                              href={`/properties/${property.slug}`}
+                              className="font-display text-sm sm:text-base font-semibold text-foreground hover:text-secondary truncate block transition-colors"
+                            >
+                              {property.title}
+                            </Link>
+                          ) : (
+                            <span className="font-display text-sm font-semibold text-muted">
+                              Unpublished or Removed Listing
                             </span>
-                            <span className="mx-1.5">•</span>
-                            <span className="font-medium text-foreground">
-                              {formatPropertyPrice(property.price)}
-                            </span>
-                          </>
-                        ) : (
-                          "Reference unavailable"
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="text-[11px] text-muted shrink-0 self-start sm:self-auto">
-                    Received {dateStr}
-                  </span>
-                </div>
-
-                {/* Sender & Message Content */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary/10 text-secondary font-semibold text-[11px]">
-                        <User className="h-3.5 w-3.5" />
+                          )}
+                          <p className="text-xs text-muted">
+                            {property ? (
+                              <>
+                                <span>
+                                  {property.city}, {property.country}
+                                </span>
+                                <span className="mx-1.5">•</span>
+                                <span className="font-medium text-foreground">
+                                  {formatPropertyPrice(property.price)}
+                                </span>
+                              </>
+                            ) : (
+                              "Reference unavailable"
+                            )}
+                          </p>
+                        </div>
                       </div>
-                      <span className="font-semibold text-foreground">
-                        {senderName}
+
+                      <span className="text-[11px] text-muted shrink-0 self-start sm:self-auto">
+                        Received {dateStr}
                       </span>
                     </div>
 
-                    {/* Direct Contact Triggers */}
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={`mailto:?subject=${encodeURIComponent(
-                          `HAVEN: Regarding inquiry on ${property?.title || "Property"}`
-                        )}&body=${encodeURIComponent(
-                          `Hello ${senderName},\n\nThank you for inquiring about ${property?.title || "this residence"}.\n\n`
-                        )}`}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-divider text-[11px] font-medium text-muted hover:text-primary hover:border-primary/40 transition-colors"
-                        title="Send email reply"
-                      >
-                        <Mail className="h-3 w-3 text-secondary" />
-                        <span>Email Reply</span>
-                      </a>
-                    </div>
-                  </div>
+                    {/* Sender & Message Content */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary/10 text-secondary font-semibold text-[11px]">
+                            <User className="h-3.5 w-3.5" />
+                          </div>
+                          <span className="font-semibold text-foreground">
+                            {senderName}
+                          </span>
+                        </div>
+
+                        {/* Direct Contact Triggers */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {buyerPhone && (
+                            <a
+                              href={`tel:${buyerPhone.replace(/\s+/g, "")}`}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-500/30 bg-emerald-500/5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                              title={`Call ${buyerPhone}`}
+                            >
+                              <Phone className="h-3 w-3" />
+                              <span>Call ({buyerPhone})</span>
+                            </a>
+                          )}
+
+                          {buyerEmail && (
+                            <a
+                              href={`mailto:${buyerEmail}?subject=${encodeURIComponent(
+                                `HAVEN: Regarding inquiry on ${property?.title || "Property"}`
+                              )}&body=${encodeURIComponent(
+                                `Hello ${senderName},\n\nThank you for inquiring about ${property?.title || "this residence"}.\n\n`
+                              )}`}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-secondary/30 bg-secondary/5 text-[11px] font-medium text-secondary hover:bg-secondary/10 transition-colors"
+                              title={`Send email to ${buyerEmail}`}
+                            >
+                              <Mail className="h-3 w-3" />
+                              <span>Email ({buyerEmail})</span>
+                            </a>
+                          )}
+
+                          {!buyerPhone && !buyerEmail && (
+                            <span className="text-[11px] text-muted italic">
+                              No direct contact provided
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
                   <div className="rounded-xl border border-divider/80 bg-background/60 p-4 text-xs sm:text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {inquiry.message}
                   </div>
+
+                  {/* Private Advisor Note (Isolated, Agent-only) */}
+                  <AgentInquiryNote
+                    inquiryId={inquiry.id}
+                    initialNote={inquiry.advisor_note}
+                  />
                 </div>
 
                 {/* Interactive Status Controls (RPC backed) */}

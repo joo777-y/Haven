@@ -33,14 +33,16 @@ export default function AgentPropertyActions({
   const [isPending, startTransition] = useTransition();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const handleStatusChange = (
     targetStatus: "draft" | "published" | "archived"
   ) => {
+    setStatusError(null);
     startTransition(async () => {
       const res = await updatePropertyStatusAction(propertyId, targetStatus);
       if (!res.success) {
-        alert(res.error || "Failed to update property status.");
+        setStatusError(res.error || "Failed to update property status.");
       }
     });
   };
@@ -219,6 +221,30 @@ export default function AgentPropertyActions({
           </div>
         </div>
       </Modal>
+      {statusError && (
+        <Modal
+          isOpen={!!statusError}
+          onClose={() => setStatusError(null)}
+          title="Listing Publication Notice"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-xs text-red-600 dark:text-red-400">
+              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+              <p className="leading-relaxed">{statusError}</p>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setStatusError(null)}
+                className="text-xs"
+              >
+                Understood
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

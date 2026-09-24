@@ -55,7 +55,7 @@ export default async function AgentOverviewPage() {
             <div className="flex items-center gap-2.5 flex-wrap">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/10 px-3 py-1 text-xs font-semibold text-secondary border border-secondary/20">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                Verified HAVEN Advisor
+                HAVEN Advisor
               </span>
               {agent?.license_number && (
                 <span className="text-xs text-muted font-medium">
@@ -87,6 +87,13 @@ export default async function AgentOverviewPage() {
               <Button variant="outline" size="md" className="gap-2 text-xs">
                 <Building className="h-4 w-4 text-muted" />
                 <span>Inventory Manager</span>
+              </Button>
+            </Link>
+
+            <Link href="/agent/profile">
+              <Button variant="outline" size="md" className="gap-2 text-xs">
+                <UserCheck className="h-4 w-4 text-muted" />
+                <span>Advisor Profile</span>
               </Button>
             </Link>
           </div>

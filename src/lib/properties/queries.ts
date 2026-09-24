@@ -504,6 +504,81 @@ export async function getAgentInquiries(): Promise<InquiryWithDetails[]> {
 
   if (!agent) return [];
 
+  // Try invoking secure RPC first (provides buyer email and phone)
+  try {
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      "get_agent_inquiries" as any
+    );
+
+    if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
+      let inquiriesList = (rpcData as any[]).map((r) => ({
+        id: r.id,
+        user_id: r.user_id,
+        agent_id: r.agent_id,
+        property_id: r.property_id,
+        message: r.message,
+        status: r.status,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+        properties: {
+          id: r.property_id_val,
+          title: r.property_title,
+          slug: r.property_slug,
+          price: Number(r.property_price),
+          city: r.property_city,
+          country: r.property_country,
+          status: r.property_status,
+          property_images: r.property_cover_image
+            ? [
+                {
+                  id: "cover",
+                  property_id: r.property_id_val,
+                  image_url: r.property_cover_image,
+                  sort_order: 0,
+                  is_cover: true,
+                  created_at: r.created_at,
+                },
+              ]
+            : [],
+        },
+        profiles: {
+          full_name: r.buyer_name,
+          avatar_url: r.buyer_avatar_url,
+          phone: r.buyer_phone,
+          email: r.buyer_email,
+        },
+        buyer_phone: r.buyer_phone,
+        buyer_email: r.buyer_email,
+      })) as InquiryWithDetails[];
+
+      // Securely attach private advisor notes (isolated table, agent-only)
+      try {
+        const { data: notesData } = await supabase
+          .from("inquiry_notes" as any)
+          .select("inquiry_id, note")
+          .eq("agent_id", agent.id);
+
+        if (notesData && Array.isArray(notesData)) {
+          const notesMap = new Map<string, string>();
+          for (const n of notesData as any[]) {
+            notesMap.set(n.inquiry_id, n.note);
+          }
+          inquiriesList = inquiriesList.map((inq) => ({
+            ...inq,
+            advisor_note: notesMap.get(inq.id) || null,
+          }));
+        }
+      } catch {
+        // Table not yet created or migration pending
+      }
+
+      return inquiriesList;
+    }
+  } catch (err) {
+    // Proceed to standard PostgREST fallback
+  }
+
+  // Fallback to direct PostgREST join with profiles.phone
   const { data, error } = await supabase
     .from("inquiries")
     .select(`
@@ -532,7 +607,8 @@ export async function getAgentInquiries(): Promise<InquiryWithDetails[]> {
       ),
       profiles (
         full_name,
-        avatar_url
+        avatar_url,
+        phone
       )
     `)
     .eq("agent_id", agent.id)
@@ -543,7 +619,30 @@ export async function getAgentInquiries(): Promise<InquiryWithDetails[]> {
     return [];
   }
 
-  return (data || []) as unknown as InquiryWithDetails[];
+  let inquiriesList = (data || []) as unknown as InquiryWithDetails[];
+
+  // Securely attach private advisor notes (isolated table, agent-only)
+  try {
+    const { data: notesData } = await supabase
+      .from("inquiry_notes" as any)
+      .select("inquiry_id, note")
+      .eq("agent_id", agent.id);
+
+    if (notesData && Array.isArray(notesData)) {
+      const notesMap = new Map<string, string>();
+      for (const n of notesData as any[]) {
+        notesMap.set(n.inquiry_id, n.note);
+      }
+      inquiriesList = inquiriesList.map((inq) => ({
+        ...inq,
+        advisor_note: notesMap.get(inq.id) || null,
+      }));
+    }
+  } catch {
+    // Table not yet created or migration pending
+  }
+
+  return inquiriesList;
 }
 
 /**

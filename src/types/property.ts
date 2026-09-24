@@ -43,7 +43,12 @@ export interface InquiryWithDetails extends InquiryRow {
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
+    phone?: string | null;
+    email?: string | null;
   } | null;
+  buyer_phone?: string | null;
+  buyer_email?: string | null;
+  advisor_note?: string | null;
 }
 
 // Normalized presentation model for UI cards

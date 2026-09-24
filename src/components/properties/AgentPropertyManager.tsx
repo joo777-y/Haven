@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Search,
@@ -12,13 +13,32 @@ import {
   Bath,
   Maximize2,
   X,
+  Check,
+  CheckSquare,
+  Square,
+  UploadCloud,
+  FileText,
+  Archive,
+  Trash2,
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
+import Modal from "@/components/ui/Modal";
 import AgentPropertyActions from "./AgentPropertyActions";
-import type { PropertyWithDetails } from "@/types/property";
-import { formatPropertyPrice, getCoverImageUrl, formatPropertyArea } from "@/types/property";
+import type { PropertyWithDetails, PropertyStatus } from "@/types/property";
+import {
+  formatPropertyPrice,
+  getCoverImageUrl,
+  formatPropertyArea,
+} from "@/types/property";
+import {
+  bulkUpdatePropertyStatusAction,
+  bulkDeletePropertiesAction,
+} from "@/lib/properties/actions";
 
 interface AgentPropertyManagerProps {
   initialProperties: PropertyWithDetails[];
@@ -27,6 +47,9 @@ interface AgentPropertyManagerProps {
 export default function AgentPropertyManager({
   initialProperties,
 }: AgentPropertyManagerProps) {
+  const router = useRouter();
+
+  // Search & Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<
     "all" | "published" | "draft" | "archived"
@@ -36,6 +59,16 @@ export default function AgentPropertyManager({
     "newest"
   );
 
+  // Bulk Selection States
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkPending, startBulkTransition] = useTransition();
+  const [bulkFeedback, setBulkFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+
+  // Counts for tabs
   const publishedCount = useMemo(
     () => initialProperties.filter((p) => p.status === "published").length,
     [initialProperties]
@@ -49,6 +82,7 @@ export default function AgentPropertyManager({
     [initialProperties]
   );
 
+  // Filtered & Sorted Properties
   const filteredProperties = useMemo(() => {
     return initialProperties
       .filter((p) => {
@@ -99,6 +133,72 @@ export default function AgentPropertyManager({
     setSelectedStatus("all");
     setSelectedType("all");
     setSortBy("newest");
+  };
+
+  // Selection Helpers
+  const isAllSelected =
+    filteredProperties.length > 0 &&
+    filteredProperties.every((p) => selectedIds.includes(p.id));
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredProperties.map((p) => p.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  // Bulk Status Update Handler
+  const handleBulkStatusChange = (targetStatus: PropertyStatus) => {
+    if (selectedIds.length === 0) return;
+    setBulkFeedback(null);
+
+    startBulkTransition(async () => {
+      const res = await bulkUpdatePropertyStatusAction(selectedIds, targetStatus);
+      if (res.success) {
+        setSelectedIds([]);
+        setBulkFeedback({
+          type: "success",
+          message: `Successfully updated ${res.data?.updatedCount || selectedIds.length} properties to '${targetStatus}'.`,
+        });
+        router.refresh();
+      } else {
+        setBulkFeedback({
+          type: "error",
+          message: res.error || "Failed to update selected properties.",
+        });
+      }
+    });
+  };
+
+  // Bulk Delete Handler
+  const handleBulkDelete = () => {
+    if (selectedIds.length === 0) return;
+    setBulkFeedback(null);
+
+    startBulkTransition(async () => {
+      const res = await bulkDeletePropertiesAction(selectedIds);
+      if (res.success) {
+        setIsBulkDeleteModalOpen(false);
+        setSelectedIds([]);
+        setBulkFeedback({
+          type: "success",
+          message: `Successfully deleted ${res.data?.deletedCount || selectedIds.length} listings and purged their storage photography.`,
+        });
+        router.refresh();
+      } else {
+        setBulkFeedback({
+          type: "error",
+          message: res.error || "Failed to delete selected listings.",
+        });
+      }
+    });
   };
 
   return (
@@ -254,7 +354,141 @@ export default function AgentPropertyManager({
         </div>
       </div>
 
-      {/* 3. Listings Inventory List */}
+      {/* 3. Operational Feedback Banner */}
+      {bulkFeedback && (
+        <div
+          className={`flex items-start justify-between gap-3 p-4 rounded-2xl border text-xs transition-all ${
+            bulkFeedback.type === "success"
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+              : "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {bulkFeedback.type === "success" ? (
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+            ) : (
+              <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
+            )}
+            <p className="font-medium">{bulkFeedback.message}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBulkFeedback(null)}
+            className="p-1 text-muted hover:text-foreground cursor-pointer"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* 4. Bulk Operations Control Bar */}
+      {selectedIds.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-secondary/30 bg-secondary/5 text-foreground shadow-xs animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer"
+            >
+              <div className="h-4 w-4 rounded-md border border-secondary bg-secondary text-white flex items-center justify-center">
+                <Check className="h-3 w-3 stroke-[3]" />
+              </div>
+              <span>
+                {selectedIds.length} {selectedIds.length === 1 ? "property" : "properties"} selected
+              </span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Bulk Publish */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isBulkPending}
+              onClick={() => handleBulkStatusChange("published")}
+              className="h-8 px-2.5 text-xs gap-1.5 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+              title="Publish all selected listings to public catalog"
+            >
+              {isBulkPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <UploadCloud className="h-3.5 w-3.5" />
+              )}
+              <span>Publish</span>
+            </Button>
+
+            {/* Bulk Unpublish / Move to Draft */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isBulkPending}
+              onClick={() => handleBulkStatusChange("draft")}
+              className="h-8 px-2.5 text-xs gap-1.5 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+              title="Move selected listings to draft status"
+            >
+              {isBulkPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <FileText className="h-3.5 w-3.5" />
+              )}
+              <span>Unpublish (Draft)</span>
+            </Button>
+
+            {/* Bulk Archive */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isBulkPending}
+              onClick={() => handleBulkStatusChange("archived")}
+              className="h-8 px-2.5 text-xs gap-1.5 text-muted hover:text-foreground"
+              title="Archive selected listings"
+            >
+              {isBulkPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Archive className="h-3.5 w-3.5" />
+              )}
+              <span>Archive</span>
+            </Button>
+
+            {/* Bulk Delete */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isBulkPending}
+              onClick={() => setIsBulkDeleteModalOpen(true)}
+              className="h-8 px-2.5 text-xs gap-1.5 border-red-500/40 text-red-600 hover:bg-red-500/10"
+              title="Delete selected listings and clean up storage"
+            >
+              {isBulkPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5" />
+              )}
+              <span>Delete</span>
+            </Button>
+
+            {/* Clear Selection */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={isBulkPending}
+              onClick={() => setSelectedIds([])}
+              className="h-8 px-2 text-xs text-muted hover:text-foreground"
+              title="Deselect all"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Listings Inventory List */}
       {filteredProperties.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-divider bg-surface/50 py-16 px-6 text-center shadow-xs">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-background border border-divider text-muted mb-3 shadow-xs">
@@ -295,6 +529,32 @@ export default function AgentPropertyManager({
         </div>
       ) : (
         <div className="rounded-2xl border border-divider bg-surface overflow-hidden shadow-xs">
+          {/* Header Row with Select All */}
+          <div className="p-3 sm:px-6 bg-background/50 border-b border-divider flex items-center justify-between text-xs text-muted font-medium">
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="flex items-center gap-2 hover:text-foreground cursor-pointer"
+            >
+              <div
+                className={`h-4 w-4 rounded-md border flex items-center justify-center transition-all ${
+                  isAllSelected
+                    ? "bg-secondary border-secondary text-white"
+                    : "border-divider bg-surface hover:border-muted"
+                }`}
+              >
+                {isAllSelected && <Check className="h-3 w-3 stroke-[3]" />}
+              </div>
+              <span>
+                {isAllSelected ? "Deselect All" : "Select All"} ({filteredProperties.length})
+              </span>
+            </button>
+
+            <span>
+              Showing {filteredProperties.length} of {initialProperties.length} listings
+            </span>
+          </div>
+
           <div className="divide-y divide-divider">
             {filteredProperties.map((property) => {
               const coverUrl = getCoverImageUrl(property.property_images);
@@ -303,14 +563,36 @@ export default function AgentPropertyManager({
                 property.listing_type
               );
               const formattedArea = formatPropertyArea(property.area);
+              const isSelected = selectedIds.includes(property.id);
 
               return (
                 <div
                   key={property.id}
-                  className="p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 transition-colors hover:bg-background/40"
+                  className={`p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 transition-colors ${
+                    isSelected ? "bg-secondary/5" : "hover:bg-background/40"
+                  }`}
                 >
-                  {/* Left: Thumbnail & Details */}
-                  <div className="flex items-start gap-4 min-w-0">
+                  {/* Left: Checkbox + Thumbnail & Details */}
+                  <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+                    {/* Row Select Checkbox */}
+                    <button
+                      type="button"
+                      onClick={() => toggleSelect(property.id)}
+                      className="pt-1.5 shrink-0 text-muted hover:text-foreground cursor-pointer"
+                      title={isSelected ? "Deselect listing" : "Select listing"}
+                    >
+                      <div
+                        className={`h-4 w-4 rounded-md border flex items-center justify-center transition-all ${
+                          isSelected
+                            ? "bg-secondary border-secondary text-white"
+                            : "border-divider bg-background hover:border-muted"
+                        }`}
+                      >
+                        {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
+                      </div>
+                    </button>
+
+                    {/* Thumbnail */}
                     <div className="relative aspect-[4/3] w-24 sm:w-32 shrink-0 overflow-hidden rounded-xl border border-divider bg-background">
                       {coverUrl && coverUrl !== "/placeholder-property.jpg" ? (
                         <img
@@ -418,6 +700,63 @@ export default function AgentPropertyManager({
             })}
           </div>
         </div>
+      )}
+
+      {/* 6. Bulk Deletion Confirmation Modal */}
+      {isBulkDeleteModalOpen && (
+        <Modal
+          isOpen={isBulkDeleteModalOpen}
+          onClose={() => !isBulkPending && setIsBulkDeleteModalOpen(false)}
+          title="Confirm Bulk Deletion"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-xs text-red-600 dark:text-red-400">
+              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-semibold text-sm">
+                  Permanently delete {selectedIds.length} {selectedIds.length === 1 ? "listing" : "listings"}?
+                </p>
+                <p className="text-red-600/90 dark:text-red-400/90 leading-relaxed">
+                  This action is permanent and cannot be undone. Selected property records, child features, associated client inquiries, buyer favorites, and all high-resolution photography stored in Supabase Storage will be permanently deleted.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isBulkPending}
+                onClick={() => setIsBulkDeleteModalOpen(false)}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                disabled={isBulkPending}
+                onClick={handleBulkDelete}
+                className="bg-red-600 hover:bg-red-700 text-white gap-2 text-xs"
+              >
+                {isBulkPending ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Deleting {selectedIds.length} listings...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete {selectedIds.length} Listings</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
