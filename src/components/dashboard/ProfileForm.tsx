@@ -113,6 +113,7 @@ export default function ProfileForm() {
                 src={avatarUrl}
                 alt={displayName}
                 fill
+                sizes="80px"
                 className="object-cover"
               />
             ) : (

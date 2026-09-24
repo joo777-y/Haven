@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Heart, MapPin, Bed, Bath, Maximize2, Building2 } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import FavoriteButton from "./FavoriteButton";
+import SaveToCollectionButton from "@/components/collections/SaveToCollectionButton";
 
 export interface Property {
   id: string;
@@ -100,12 +101,20 @@ export default function PropertyCard({
             )}
           </div>
 
-          {/* Reusable Favorite Button */}
-          <FavoriteButton
-            propertyId={property.id}
-            initialIsSaved={property.isSaved}
-            onToggleSuccess={onSaveToggle ? () => onSaveToggle(property.id) : undefined}
-          />
+          <div className="flex items-center gap-1.5">
+            {/* Curated Collection Bookmark */}
+            <SaveToCollectionButton
+              propertyId={property.id}
+              propertyTitle={property.title}
+              variant="icon"
+            />
+            {/* Reusable Favorite Button */}
+            <FavoriteButton
+              propertyId={property.id}
+              initialIsSaved={property.isSaved}
+              onToggleSuccess={onSaveToggle ? () => onSaveToggle(property.id) : undefined}
+            />
+          </div>
         </div>
       </div>
 

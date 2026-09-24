@@ -88,6 +88,7 @@ export default function UserMenu() {
               src={profile.avatar_url}
               alt={displayName}
               fill
+              sizes="28px"
               className="object-cover"
             />
           ) : (
@@ -220,6 +221,15 @@ export default function UserMenu() {
             >
               <UserIcon className="h-4 w-4 text-muted" />
               <span>Profile & Account</span>
+            </Link>
+
+            <Link
+              href="/dashboard/settings"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-foreground hover:bg-surface transition-colors"
+            >
+              <Settings className="h-4 w-4 text-muted" />
+              <span>Preferences</span>
             </Link>
 
             <button

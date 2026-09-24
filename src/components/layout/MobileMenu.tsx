@@ -12,6 +12,7 @@ import {
   Building,
   PlusCircle,
   MessageSquare,
+  Settings,
   LogOut,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -79,6 +80,7 @@ export default function MobileMenu({
                   src={profile.avatar_url}
                   alt={displayName}
                   fill
+                  sizes="40px"
                   className="object-cover"
                 />
               ) : (
@@ -158,12 +160,30 @@ export default function MobileMenu({
               </Link>
 
               <Link
+                href="/dashboard/inquiries"
+                onClick={onClose}
+                className="flex items-center gap-2.5 rounded-lg px-3.5 py-2 text-sm text-foreground hover:bg-surface"
+              >
+                <MessageSquare className="h-4 w-4 text-muted" />
+                <span>My Inquiries</span>
+              </Link>
+
+              <Link
                 href="/dashboard/collections"
                 onClick={onClose}
                 className="flex items-center gap-2.5 rounded-lg px-3.5 py-2 text-sm text-foreground hover:bg-surface"
               >
                 <FolderHeart className="h-4 w-4 text-muted" />
                 <span>Collections</span>
+              </Link>
+
+              <Link
+                href="/dashboard/settings"
+                onClick={onClose}
+                className="flex items-center gap-2.5 rounded-lg px-3.5 py-2 text-sm text-foreground hover:bg-surface"
+              >
+                <Settings className="h-4 w-4 text-muted" />
+                <span>Preferences</span>
               </Link>
 
               {isAgent ? (

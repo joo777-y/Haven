@@ -110,14 +110,18 @@ export type PaginatedProperties = PaginatedResult<PropertyWithDetails>;
  * Priority: is_cover = true -> lowest sort_order -> first image -> fallback placeholder.
  */
 export function getCoverImageUrl(
-  images?: PropertyImageRow[] | null,
+  images?: Array<{
+    image_url: string;
+    is_cover?: boolean | null;
+    sort_order?: number | null;
+  }> | null,
   fallback = "/placeholder-property.jpg"
 ): string {
   if (!images || images.length === 0) return fallback;
   const cover = images.find((img) => img.is_cover);
   if (cover?.image_url) return cover.image_url;
 
-  const sorted = [...images].sort((a, b) => a.sort_order - b.sort_order);
+  const sorted = [...images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   return sorted[0]?.image_url || fallback;
 }
 

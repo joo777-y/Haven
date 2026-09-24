@@ -7,6 +7,7 @@ import Badge from "@/components/ui/Badge";
 import PropertyGrid from "@/components/properties/PropertyGrid";
 import PropertyGallery from "@/components/properties/PropertyGallery";
 import FavoriteButton from "@/components/properties/FavoriteButton";
+import SaveToCollectionButton from "@/components/collections/SaveToCollectionButton";
 import ContactAgentForm from "@/components/properties/ContactAgentForm";
 import type { Property } from "@/components/properties/PropertyCard";
 import {
@@ -176,12 +177,20 @@ export default async function PropertyDetailsPage({
               </span>
             </div>
 
-            <FavoriteButton
-              propertyId={property.id}
-              initialIsSaved={isCurrentSaved}
-              variant="button"
-              showLabel
-            />
+            <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+              <SaveToCollectionButton
+                propertyId={property.id}
+                propertyTitle={property.title}
+                variant="button"
+                showLabel
+              />
+              <FavoriteButton
+                propertyId={property.id}
+                initialIsSaved={isCurrentSaved}
+                variant="button"
+                showLabel
+              />
+            </div>
           </div>
         </div>
 
