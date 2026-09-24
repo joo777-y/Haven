@@ -433,6 +433,98 @@ export async function updatePropertyStatusAction(
   return { success: true, data: { id: propertyId, status: targetStatus } };
 }
 
+/**
+ * Permanently deletes a property listing owned by the authenticated advisor.
+ * Postgres CASCADE deletes property_images, property_features, and favorites automatically.
+ * Cleans up Supabase Storage images associated with the property.
+ */
+export async function deletePropertyAction(
+  propertyId: string
+): Promise<ActionResult<{ id: string }>> {
+  if (!propertyId || !UUID_REGEX.test(propertyId)) {
+    return { success: false, error: "Invalid property identifier." };
+  }
+
+  const supabase = await createClient();
+
+  // 1. Authenticate caller
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { success: false, error: "Authentication required." };
+  }
+
+  // 2. Resolve advisor record
+  const { data: agent, error: agentError } = await supabase
+    .from("agents")
+    .select("id")
+    .eq("profile_id", user.id)
+    .maybeSingle();
+
+  if (agentError || !agent) {
+    return { success: false, error: "Advisor profile not found." };
+  }
+
+  // 3. Verify property ownership & retrieve images for storage cleanup
+  const { data: property, error: propError } = await supabase
+    .from("properties")
+    .select(`
+      id,
+      slug,
+      property_images (
+        id,
+        image_url
+      )
+    `)
+    .eq("id", propertyId)
+    .eq("agent_id", agent.id)
+    .maybeSingle();
+
+  if (propError || !property) {
+    return {
+      success: false,
+      error: "Listing not found or you do not have permission to delete it.",
+    };
+  }
+
+  // 4. Clean up Storage files if applicable
+  if (property.property_images && property.property_images.length > 0) {
+    const storagePaths: string[] = [];
+    for (const img of property.property_images) {
+      if (img.image_url.includes("/property-images/")) {
+        const parts = img.image_url.split("/property-images/");
+        if (parts[1]) storagePaths.push(parts[1]);
+      }
+    }
+    if (storagePaths.length > 0) {
+      await supabase.storage.from("property-images").remove(storagePaths);
+    }
+  }
+
+  // 5. Delete property row (cascades to features, images, favorites, collection_properties)
+  const { error: deleteError } = await supabase
+    .from("properties")
+    .delete()
+    .eq("id", propertyId)
+    .eq("agent_id", agent.id);
+
+  if (deleteError) {
+    console.error("Error deleting property:", deleteError);
+    return { success: false, error: "Failed to delete property listing." };
+  }
+
+  // 6. Revalidate pages
+  revalidatePath("/agent");
+  revalidatePath("/agent/properties");
+  revalidatePath("/properties");
+  revalidatePath(`/properties/${property.slug}`);
+
+  return { success: true, data: { id: propertyId } };
+}
+
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
   "image/png",

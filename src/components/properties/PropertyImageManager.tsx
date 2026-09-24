@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import Image from "next/image";
 import {
   UploadCloud,
@@ -26,11 +26,13 @@ import {
 interface PropertyImageManagerProps {
   propertyId: string;
   initialImages: PropertyImageRow[];
+  onImagesChange?: (images: PropertyImageRow[]) => void;
 }
 
 export default function PropertyImageManager({
   propertyId,
   initialImages,
+  onImagesChange,
 }: PropertyImageManagerProps) {
   const [images, setImages] = useState<PropertyImageRow[]>(
     [...initialImages].sort((a, b) => a.sort_order - b.sort_order)
@@ -40,6 +42,10 @@ export default function PropertyImageManager({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    onImagesChange?.(images);
+  }, [images, onImagesChange]);
 
   // 1. Handle Multiple File Uploads
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

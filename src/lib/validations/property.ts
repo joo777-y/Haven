@@ -186,3 +186,133 @@ export function parseFilterParams(
     limit: data.limit,
   };
 }
+
+/**
+ * Validation schema for updating inquiry status via RPC.
+ */
+export const inquiryStatusUpdateSchema = z.object({
+  inquiry_id: z.string().uuid("Invalid inquiry ID"),
+  status: z.enum(["contacted", "closed"] as const),
+});
+
+export type InquiryStatusUpdateInput = z.infer<typeof inquiryStatusUpdateSchema>;
+
+/**
+ * Validation schema for reordering and updating cover image of a property.
+ */
+export const imageReorderSchema = z.object({
+  property_id: z.string().uuid("Invalid property ID"),
+  images: z.array(
+    z.object({
+      id: z.string().uuid("Invalid image ID"),
+      sort_order: z.number().int().min(0),
+      is_cover: z.boolean(),
+    })
+  ),
+});
+
+export type ImageReorderInput = z.infer<typeof imageReorderSchema>;
+
+/**
+ * Wizard Step 1 Schema: Basic Information & Taxonomy
+ */
+export const wizardStep1Schema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(5, "Title must be at least 5 characters")
+    .max(150, "Title cannot exceed 150 characters"),
+  description: z
+    .string()
+    .trim()
+    .min(10, "Description must be at least 10 characters"),
+  price: z.coerce
+    .number()
+    .min(1, "Price must be greater than zero"),
+  listing_type: z.enum(LISTING_TYPES, {
+    message: "Invalid listing type. Choose sale or rent.",
+  }),
+  property_type: z.enum(PROPERTY_TYPES, {
+    message: "Invalid property type.",
+  }),
+});
+
+/**
+ * Wizard Step 2 Schema: Geographic Location
+ */
+export const wizardStep2Schema = z.object({
+  country: z
+    .string()
+    .trim()
+    .min(1, "Country is required")
+    .max(100, "Country name cannot exceed 100 characters"),
+  city: z
+    .string()
+    .trim()
+    .min(1, "City is required")
+    .max(100, "City name cannot exceed 100 characters"),
+  neighborhood: z
+    .string()
+    .trim()
+    .max(100, "Neighborhood cannot exceed 100 characters")
+    .nullable()
+    .optional(),
+  address: z
+    .string()
+    .trim()
+    .max(255, "Address cannot exceed 255 characters")
+    .nullable()
+    .optional(),
+  latitude: z.coerce
+    .number()
+    .min(-90, "Latitude must be between -90 and 90")
+    .max(90, "Latitude must be between -90 and 90")
+    .nullable()
+    .optional(),
+  longitude: z.coerce
+    .number()
+    .min(-180, "Longitude must be between -180 and 180")
+    .max(180, "Longitude must be between -180 and 180")
+    .nullable()
+    .optional(),
+});
+
+/**
+ * Wizard Step 3 Schema: Architectural Specs & Amenities
+ */
+export const wizardStep3Schema = z.object({
+  bedrooms: z.coerce
+    .number()
+    .int("Bedrooms must be a whole number")
+    .min(0, "Bedrooms cannot be negative")
+    .nullable()
+    .optional(),
+  bathrooms: z.coerce
+    .number()
+    .int("Bathrooms must be a whole number")
+    .min(0, "Bathrooms cannot be negative")
+    .nullable()
+    .optional(),
+  area: z.coerce
+    .number()
+    .min(1, "Area must be greater than 0")
+    .nullable()
+    .optional(),
+  parking_spaces: z.coerce
+    .number()
+    .int("Parking spaces must be a whole number")
+    .min(0, "Parking spaces cannot be negative")
+    .nullable()
+    .optional(),
+  year_built: z.coerce
+    .number()
+    .int("Year built must be a valid year")
+    .min(1800, "Year built must be after 1800")
+    .max(currentYear + 5, `Year built cannot exceed ${currentYear + 5}`)
+    .nullable()
+    .optional(),
+  features: z
+    .array(z.string().trim().min(1, "Feature item cannot be empty"))
+    .optional()
+    .default([]),
+});

@@ -1,10 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
-import type {
+import {
   PropertyWithDetails,
   PropertyFilters,
   PaginatedProperties,
   InquiryWithDetails,
+  PropertyStatus,
+  PropertyType,
+  getCoverImageUrl,
 } from "@/types/property";
+import type { AgentDashboardStats } from "@/types/agent";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -540,5 +544,193 @@ export async function getAgentInquiries(): Promise<InquiryWithDetails[]> {
   }
 
   return (data || []) as unknown as InquiryWithDetails[];
+}
+
+/**
+ * Aggregates high-level advisor statistics and recent pipeline data for /agent.
+ */
+export async function getAgentDashboardStats(): Promise<AgentDashboardStats | null> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  const { data: agent } = await supabase
+    .from("agents")
+    .select("id")
+    .eq("profile_id", user.id)
+    .maybeSingle();
+
+  if (!agent) return null;
+
+  // Execute properties and inquiries queries in parallel
+  const [propertiesRes, inquiriesRes] = await Promise.all([
+    supabase
+      .from("properties")
+      .select(`
+        id,
+        title,
+        slug,
+        price,
+        city,
+        status,
+        bedrooms,
+        bathrooms,
+        area,
+        created_at,
+        property_images (
+          image_url,
+          is_cover,
+          sort_order
+        )
+      `)
+      .eq("agent_id", agent.id)
+      .order("created_at", { ascending: false }),
+
+    supabase
+      .from("inquiries")
+      .select(`
+        id,
+        message,
+        status,
+        created_at,
+        properties (
+          title,
+          slug
+        ),
+        profiles (
+          full_name,
+          phone
+        )
+      `)
+      .eq("agent_id", agent.id)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const properties = propertiesRes.data || [];
+  const inquiries = inquiriesRes.data || [];
+
+  let publishedCount = 0;
+  let draftCount = 0;
+  let archivedCount = 0;
+  let totalPortfolioValue = 0;
+
+  for (const p of properties) {
+    if (p.status === "published") {
+      publishedCount++;
+      totalPortfolioValue += Number(p.price) || 0;
+    } else if (p.status === "draft") {
+      draftCount++;
+    } else if (p.status === "archived") {
+      archivedCount++;
+    }
+  }
+
+  let newInquiriesCount = 0;
+  let contactedInquiriesCount = 0;
+  let closedInquiriesCount = 0;
+
+  for (const inq of inquiries) {
+    if (inq.status === "new") newInquiriesCount++;
+    else if (inq.status === "contacted") contactedInquiriesCount++;
+    else if (inq.status === "closed") closedInquiriesCount++;
+  }
+
+  const recentProperties = properties.slice(0, 4).map((p) => ({
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    price: p.price,
+    city: p.city,
+    status: p.status,
+    bedrooms: p.bedrooms,
+    bathrooms: p.bathrooms,
+    area: p.area,
+    created_at: p.created_at,
+    coverImage: getCoverImageUrl(p.property_images),
+  }));
+
+  const recentInquiries = inquiries.slice(0, 5).map((inq) => ({
+    id: inq.id,
+    message: inq.message,
+    status: inq.status,
+    created_at: inq.created_at,
+    propertyTitle: inq.properties?.title || "Property",
+    propertySlug: inq.properties?.slug || "",
+    buyerName: inq.profiles?.full_name || "Prospective Buyer",
+    buyerPhone: inq.profiles?.phone || null,
+  }));
+
+  return {
+    totalListings: properties.length,
+    publishedCount,
+    draftCount,
+    archivedCount,
+    totalInquiries: inquiries.length,
+    newInquiriesCount,
+    contactedInquiriesCount,
+    closedInquiriesCount,
+    totalPortfolioValue,
+    recentInquiries,
+    recentProperties,
+  };
+}
+
+/**
+ * Fetches all properties owned by the agent with optional status and search filtering.
+ */
+export async function getAgentPropertiesWithFilters(filters: {
+  status?: PropertyStatus | "all";
+  query?: string;
+  property_type?: PropertyType | "all";
+} = {}): Promise<PropertyWithDetails[]> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data: agent } = await supabase
+    .from("agents")
+    .select("id")
+    .eq("profile_id", user.id)
+    .maybeSingle();
+
+  if (!agent) return [];
+
+  let query = supabase
+    .from("properties")
+    .select(PROPERTY_DETAILS_SELECT)
+    .eq("agent_id", agent.id)
+    .order("created_at", { ascending: false });
+
+  if (filters.status && filters.status !== "all") {
+    query = query.eq("status", filters.status as PropertyStatus);
+  }
+
+  if (filters.property_type && filters.property_type !== "all") {
+    query = query.eq("property_type", filters.property_type as PropertyType);
+  }
+
+  if (filters.query?.trim()) {
+    const term = filters.query.trim().replace(/'/g, "''");
+    query = query.or(
+      `title.ilike.%${term}%,city.ilike.%${term}%,neighborhood.ilike.%${term}%`
+    );
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error fetching filtered agent properties:", error);
+    return [];
+  }
+
+  return (data || []) as unknown as PropertyWithDetails[];
 }
 

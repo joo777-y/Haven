@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import PropertyForm from "@/components/properties/PropertyForm";
+import PropertyCreationWizard from "@/components/properties/PropertyCreationWizard";
 
 export const metadata: Metadata = {
   title: "Create New Listing | HAVEN Advisor",
-  description: "Register a new architectural residence in draft status.",
+  description:
+    "Guided 5-step listing creator: essentials, location, specs, photography, and review.",
 };
 
 export default function NewPropertyPage() {
@@ -18,7 +19,7 @@ export default function NewPropertyPage() {
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-primary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Listing Portfolio</span>
+          <span>Back to Listing Portfolio</span>
         </Link>
 
         <div className="space-y-1">
@@ -26,15 +27,13 @@ export default function NewPropertyPage() {
             Create Property Listing
           </h1>
           <p className="text-xs sm:text-sm text-muted">
-            Enter architectural details, dimensions, and amenities. New listings
-            start as <span className="font-medium text-amber-600">Draft</span> and
-            can be published whenever you are ready.
+            Guided 5-step workflow to craft an architectural residence listing, attach media, and broadcast to prospective buyers.
           </p>
         </div>
       </div>
 
-      {/* Property Form */}
-      <PropertyForm mode="create" />
+      {/* Guided 5-Step Creation Wizard */}
+      <PropertyCreationWizard />
     </div>
   );
 }

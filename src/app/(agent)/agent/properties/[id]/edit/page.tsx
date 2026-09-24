@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import PropertyForm from "@/components/properties/PropertyForm";
 import PropertyImageManager from "@/components/properties/PropertyImageManager";
+import AgentPropertyActions from "@/components/properties/AgentPropertyActions";
 import { getPropertyForEdit } from "@/lib/properties/queries";
 
 export const metadata: Metadata = {
@@ -52,24 +53,12 @@ export default async function EditPropertyPage({
             </p>
           </div>
 
-          <div className="self-start sm:self-auto">
-            {property.status === "published" && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Published
-              </span>
-            )}
-            {property.status === "draft" && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                Draft
-              </span>
-            )}
-            {property.status === "archived" && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-500/10 px-3 py-1 text-xs font-semibold text-gray-500 border border-gray-500/20">
-                Archived
-              </span>
-            )}
+          <div className="flex items-center gap-3 flex-wrap">
+            <AgentPropertyActions
+              propertyId={property.id}
+              slug={property.slug}
+              status={property.status}
+            />
           </div>
         </div>
       </div>
