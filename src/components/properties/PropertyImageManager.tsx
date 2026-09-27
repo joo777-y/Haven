@@ -266,30 +266,25 @@ export default function PropertyImageManager({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {images.map((img, idx) => {
-            const isSupabaseStorage = img.image_url.startsWith(
-              "https://afxgijkdaaidklzhwell.supabase.co"
-            );
-
-            return (
-              <div
-                key={img.id}
-                className={`group relative flex flex-col overflow-hidden rounded-xl border bg-background transition-all shadow-xs ${
-                  img.is_cover
-                    ? "border-secondary ring-2 ring-secondary/20"
-                    : "border-divider"
-                }`}
-              >
-                {/* Thumbnail Viewport */}
-                <div className="relative aspect-[4/3] w-full overflow-hidden bg-surface">
-                  <Image
-                    src={img.image_url}
-                    alt={`Property image ${idx + 1}`}
-                    fill
-                    unoptimized={!isSupabaseStorage}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
+          {images.map((img, idx) => (
+            <div
+              key={img.id}
+              className={`group relative flex flex-col overflow-hidden rounded-xl border bg-background transition-all shadow-xs ${
+                img.is_cover
+                  ? "border-secondary ring-2 ring-secondary/20"
+                  : "border-divider"
+              }`}
+            >
+              {/* Thumbnail Viewport */}
+              <div className="relative aspect-[4/3] w-full overflow-hidden bg-surface">
+                <Image
+                  src={img.image_url}
+                  alt={`Property image ${idx + 1}`}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
 
                   {/* Top Badges */}
                   <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
@@ -358,9 +353,8 @@ export default function PropertyImageManager({
                   )}
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
       )}
     </div>
   );

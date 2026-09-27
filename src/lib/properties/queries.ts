@@ -156,6 +156,12 @@ export async function getPublishedProperties(
     case "price_desc":
       query = query.order("price", { ascending: false });
       break;
+    case "price_sqm":
+      query = query.order("price_per_sqm", { ascending: true, nullsFirst: false });
+      break;
+    case "bedrooms":
+      query = query.order("bedrooms", { ascending: false, nullsFirst: false });
+      break;
     case "newest":
     default:
       query = query.order("created_at", { ascending: false });

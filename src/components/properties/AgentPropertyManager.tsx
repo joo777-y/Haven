@@ -23,6 +23,10 @@ import {
   Loader2,
   AlertTriangle,
   CheckCircle2,
+  Eye,
+  Heart,
+  MessageSquare,
+  TrendingUp,
 } from "lucide-react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -30,6 +34,7 @@ import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import AgentPropertyActions from "./AgentPropertyActions";
 import type { PropertyWithDetails, PropertyStatus } from "@/types/property";
+import type { AgentPropertyAnalytics } from "@/types/agent";
 import {
   formatPropertyPrice,
   getCoverImageUrl,
@@ -42,10 +47,12 @@ import {
 
 interface AgentPropertyManagerProps {
   initialProperties: PropertyWithDetails[];
+  analytics?: AgentPropertyAnalytics[];
 }
 
 export default function AgentPropertyManager({
   initialProperties,
+  analytics,
 }: AgentPropertyManagerProps) {
   const router = useRouter();
 
@@ -81,6 +88,17 @@ export default function AgentPropertyManager({
     () => initialProperties.filter((p) => p.status === "archived").length,
     [initialProperties]
   );
+
+  // Map analytics metrics by property ID for instantaneous row lookup
+  const analyticsMap = useMemo(() => {
+    const map = new Map<string, AgentPropertyAnalytics>();
+    if (analytics) {
+      for (const item of analytics) {
+        map.set(item.property_id, item);
+      }
+    }
+    return map;
+  }, [analytics]);
 
   // Filtered & Sorted Properties
   const filteredProperties = useMemo(() => {
@@ -683,6 +701,43 @@ export default function AgentPropertyManager({
                             </span>
                           )}
                         </div>
+
+                        {/* Listing Engagement Performance Counters (Phase 11) */}
+                        {analyticsMap.has(property.id) && (
+                          <div className="flex items-center gap-2 pt-1 flex-wrap">
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-semibold"
+                              title="Total Views"
+                            >
+                              <Eye className="h-3 w-3" />
+                              {analyticsMap.get(property.id)!.views_count.toLocaleString()}
+                            </span>
+
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-semibold"
+                              title="Client Saves / Favorites"
+                            >
+                              <Heart className="h-3 w-3" />
+                              {analyticsMap.get(property.id)!.favorites_count.toLocaleString()}
+                            </span>
+
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/10 text-secondary text-[10px] font-semibold"
+                              title="Buyer Inquiries"
+                            >
+                              <MessageSquare className="h-3 w-3" />
+                              {analyticsMap.get(property.id)!.inquiries_count.toLocaleString()}
+                            </span>
+
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold"
+                              title="Inquiry Conversion Rate"
+                            >
+                              <TrendingUp className="h-3 w-3" />
+                              {analyticsMap.get(property.id)!.inquiry_conversion_rate}%
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

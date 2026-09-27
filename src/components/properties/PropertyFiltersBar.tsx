@@ -21,6 +21,8 @@ const sortOptions = [
   { value: "newest", label: "Sort by: Newest Listed" },
   { value: "price_asc", label: "Sort by: Price (Low to High)" },
   { value: "price_desc", label: "Sort by: Price (High to Low)" },
+  { value: "price_sqm", label: "Sort by: Price per m²" },
+  { value: "bedrooms", label: "Sort by: Most Bedrooms" },
 ];
 
 const listingTypeOptions = [

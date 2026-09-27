@@ -404,11 +404,7 @@ export default function PropertyCatalogMap({
                   alt={activePreview.title}
                   fill
                   sizes="320px"
-                  unoptimized={
-                    !activePreview.image.startsWith(
-                      "https://afxgijkdaaidklzhwell.supabase.co"
-                    )
-                  }
+                  unoptimized
                   className="object-cover"
                 />
               ) : (

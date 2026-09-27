@@ -3,7 +3,10 @@ import Link from "next/link";
 import { PlusCircle, ArrowLeft } from "lucide-react";
 import Button from "@/components/ui/Button";
 import AgentPropertyManager from "@/components/properties/AgentPropertyManager";
-import { getAgentProperties } from "@/lib/properties/queries";
+import {
+  getAgentProperties,
+  getAgentPropertyAnalytics,
+} from "@/lib/properties/queries";
 
 export const metadata: Metadata = {
   title: "My Listings Portfolio | HAVEN Advisor",
@@ -11,8 +14,11 @@ export const metadata: Metadata = {
 };
 
 export default async function AgentPropertiesPage() {
-  // Fetch properties owned exclusively by this authenticated advisor
-  const properties = await getAgentProperties();
+  // Fetch properties and analytics owned exclusively by this authenticated advisor
+  const [properties, analytics] = await Promise.all([
+    getAgentProperties(),
+    getAgentPropertyAnalytics(),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -46,7 +52,7 @@ export default async function AgentPropertiesPage() {
       </div>
 
       {/* Interactive Inventory Manager with Search & Filters */}
-      <AgentPropertyManager initialProperties={properties} />
+      <AgentPropertyManager initialProperties={properties} analytics={analytics} />
     </div>
   );
 }

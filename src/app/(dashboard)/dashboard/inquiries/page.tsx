@@ -63,7 +63,6 @@ export default async function UserInquiriesPage() {
           {inquiries.map((inquiry) => {
             const property = inquiry.properties;
             const coverUrl = getCoverImageUrl(property?.property_images);
-            const isSupabase = coverUrl.startsWith("https://afxgijkdaaidklzhwell.supabase.co");
             const dateStr = new Date(inquiry.created_at).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
@@ -86,7 +85,7 @@ export default async function UserInquiriesPage() {
                           src={coverUrl}
                           alt={property?.title || "Property"}
                           fill
-                          unoptimized={!isSupabase}
+                          unoptimized
                           sizes="80px"
                           className="object-cover"
                         />

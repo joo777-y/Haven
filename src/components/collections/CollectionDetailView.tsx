@@ -226,9 +226,6 @@ export default function CollectionDetailView({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {collection.properties.map((prop) => {
             const coverUrl = getCoverImageUrl(prop.property_images);
-            const isSubSupabase = coverUrl.startsWith(
-              "https://afxgijkdaaidklzhwell.supabase.co"
-            );
             const isRemoving = removingId === prop.id;
 
             return (
@@ -244,7 +241,7 @@ export default function CollectionDetailView({
                     src={coverUrl}
                     alt={prop.title}
                     fill
-                    unoptimized={!isSubSupabase}
+                    unoptimized
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />

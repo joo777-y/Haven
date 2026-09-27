@@ -229,9 +229,6 @@ export default function AgentInquiryManager({
           {filteredInquiries.map((inquiry) => {
             const property = inquiry.properties;
             const coverUrl = getCoverImageUrl(property?.property_images);
-            const isSupabase = coverUrl.startsWith(
-              "https://afxgijkdaaidklzhwell.supabase.co"
-            );
             const senderName =
               inquiry.profiles?.full_name || "Prospective Client";
             const dateStr = new Date(inquiry.created_at).toLocaleDateString(
@@ -263,7 +260,7 @@ export default function AgentInquiryManager({
                               src={coverUrl}
                               alt={property?.title || "Property image"}
                               fill
-                              unoptimized={!isSupabase}
+                              unoptimized
                               sizes="80px"
                               className="object-cover"
                             />

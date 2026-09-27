@@ -178,11 +178,7 @@ export default function AgentProfileForm({
                 fill
                 sizes="112px"
                 className="object-cover"
-                unoptimized={
-                  !avatarUrl.startsWith(
-                    "https://afxgijkdaaidklzhwell.supabase.co"
-                  )
-                }
+                unoptimized
               />
             ) : (
               userInitials

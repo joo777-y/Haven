@@ -82,6 +82,7 @@ export default function MobileMenu({
                   fill
                   sizes="40px"
                   className="object-cover"
+                  unoptimized
                 />
               ) : (
                 userInitials

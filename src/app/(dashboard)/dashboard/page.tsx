@@ -62,6 +62,7 @@ export default async function DashboardPage() {
                   fill
                   sizes="80px"
                   className="object-cover"
+                  unoptimized
                 />
               ) : (
                 <span>{userInitials}</span>

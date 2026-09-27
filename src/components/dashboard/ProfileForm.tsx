@@ -115,6 +115,7 @@ export default function ProfileForm() {
                 fill
                 sizes="80px"
                 className="object-cover"
+                unoptimized
               />
             ) : (
               userInitials

@@ -66,30 +66,25 @@ export default function RecentlyViewedTray({
 
       {/* Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-        {displayItems.map((property) => {
-          const isSupabase = property.coverImage.startsWith(
-            "https://afxgijkdaaidklzhwell.supabase.co"
-          );
-
-          return (
-            <div
-              key={property.id}
-              className="group relative flex flex-col overflow-hidden rounded-2xl border border-divider bg-surface transition-all duration-300 hover:border-secondary/30 hover:shadow-card"
+        {displayItems.map((property) => (
+          <div
+            key={property.id}
+            className="group relative flex flex-col overflow-hidden rounded-2xl border border-divider bg-surface transition-all duration-300 hover:border-secondary/30 hover:shadow-card"
+          >
+            {/* Image Frame */}
+            <Link
+              href={`/properties/${property.slug}`}
+              className="relative aspect-4/3 w-full overflow-hidden bg-background block"
             >
-              {/* Image Frame */}
-              <Link
-                href={`/properties/${property.slug}`}
-                className="relative aspect-4/3 w-full overflow-hidden bg-background block"
-              >
-                {property.coverImage ? (
-                  <Image
-                    src={property.coverImage}
-                    alt={property.title}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    unoptimized={!isSupabase}
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
+              {property.coverImage ? (
+                <Image
+                  src={property.coverImage}
+                  alt={property.title}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  unoptimized
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-muted">
                     <Building2 className="h-8 w-8" />
@@ -135,10 +130,9 @@ export default function RecentlyViewedTray({
                     <ExternalLink className="h-3 w-3" />
                   </Link>
                 </div>
-              </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </section>
   );

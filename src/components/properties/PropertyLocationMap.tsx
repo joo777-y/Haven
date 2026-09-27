@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
-import { MapPin, Navigation, ExternalLink, Compass } from "lucide-react";
+import { MapPin, Navigation, ExternalLink, Compass, Copy, Check } from "lucide-react";
 import Button from "@/components/ui/Button";
 
 // Dynamically import PropertyMap with SSR disabled to guarantee zero window/WebGL issues during SSR
@@ -38,6 +39,8 @@ export default function PropertyLocationMap({
   formattedPrice,
   className = "",
 }: PropertyLocationMapProps) {
+  const [copied, setCopied] = useState(false);
+
   const hasCoordinates =
     typeof latitude === "number" &&
     typeof longitude === "number" &&
@@ -53,9 +56,20 @@ export default function PropertyLocationMap({
         [address, neighborhood, city, country].filter(Boolean).join(", ")
       )}`;
 
+  const handleCopyCoords = async () => {
+    if (!hasCoordinates) return;
+    try {
+      await navigator.clipboard.writeText(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Ignore clipboard write failure
+    }
+  };
+
   return (
     <section className={`space-y-4 pt-6 border-t border-divider ${className}`}>
-      {/* Header with location text and external directions link */}
+      {/* Header with location text, coordinates badge and external directions link */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -72,16 +86,36 @@ export default function PropertyLocationMap({
           </p>
         </div>
 
-        <a
-          href={directionsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-divider bg-surface text-xs font-semibold text-foreground hover:border-secondary/40 hover:text-secondary transition-all shadow-xs self-start sm:self-auto cursor-pointer"
-        >
-          <Navigation className="h-3.5 w-3.5 text-secondary" />
-          <span>Get Directions</span>
-          <ExternalLink className="h-3 w-3 text-muted ml-0.5" />
-        </a>
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          {hasCoordinates && (
+            <button
+              type="button"
+              onClick={handleCopyCoords}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-divider bg-surface text-xs font-mono text-muted hover:text-foreground hover:border-secondary/40 transition-all shadow-xs cursor-pointer"
+              title="Copy GPS coordinates"
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5 text-muted" />
+              )}
+              <span>
+                {latitude.toFixed(4)}°, {longitude.toFixed(4)}°
+              </span>
+            </button>
+          )}
+
+          <a
+            href={directionsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-divider bg-surface text-xs font-semibold text-foreground hover:border-secondary/40 hover:text-secondary transition-all shadow-xs cursor-pointer"
+          >
+            <Navigation className="h-3.5 w-3.5 text-secondary" />
+            <span>Get Directions</span>
+            <ExternalLink className="h-3 w-3 text-muted ml-0.5" />
+          </a>
+        </div>
       </div>
 
       {/* Map or Graceful Fallback Card */}

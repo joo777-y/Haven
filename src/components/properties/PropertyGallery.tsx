@@ -31,8 +31,6 @@ export default function PropertyGallery({
   const [imageError, setImageError] = useState(false);
 
   const activeImage = sortedImages[selectedIndex]?.image_url;
-  const isSupabaseImage =
-    activeImage?.startsWith("https://afxgijkdaaidklzhwell.supabase.co") ?? false;
 
   // Fallback when no images exist
   if (!images || images.length === 0 || (!activeImage && imageError)) {
@@ -66,7 +64,7 @@ export default function PropertyGallery({
             alt={`${title} - View ${selectedIndex + 1}`}
             fill
             priority
-            unoptimized={!isSupabaseImage}
+            unoptimized
             onError={() => setImageError(true)}
             sizes="(max-width: 1280px) 100vw, 1280px"
             className="object-cover transition-opacity duration-300"
@@ -79,9 +77,6 @@ export default function PropertyGallery({
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
           {sortedImages.map((img, idx) => {
             const isSelected = idx === selectedIndex;
-            const isSubSupabase = img.image_url.startsWith(
-              "https://afxgijkdaaidklzhwell.supabase.co"
-            );
 
             return (
               <button
@@ -100,7 +95,7 @@ export default function PropertyGallery({
                   src={img.image_url}
                   alt={`${title} thumbnail ${idx + 1}`}
                   fill
-                  unoptimized={!isSubSupabase}
+                  unoptimized
                   sizes="120px"
                   className="object-cover"
                 />
