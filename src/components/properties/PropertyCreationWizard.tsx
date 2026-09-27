@@ -28,6 +28,7 @@ import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import PropertyImageManager from "./PropertyImageManager";
+import PropertyLocationPicker from "./PropertyLocationPicker";
 import {
   LISTING_TYPES,
   PROPERTY_TYPES,
@@ -410,7 +411,7 @@ export default function PropertyCreationWizard() {
           </div>
         )}
 
-        {/* STEP 2: Geographic Location */}
+        {/* STEP 2: Geographic Location & Geocoding */}
         {currentStep === 2 && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <div className="border-b border-divider/60 pb-4">
@@ -418,79 +419,25 @@ export default function PropertyCreationWizard() {
                 Location & Geography
               </h2>
               <p className="text-xs text-muted mt-0.5">
-                Situate this property within its city, country, and exclusive district.
+                Situate this property within its country, city, district, and automated or manual GPS coordinates.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <Input
-                  label="Country *"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  error={fieldErrors.country}
-                  placeholder="Egypt"
-                  className="text-xs"
-                />
-              </div>
-
-              <div>
-                <Input
-                  label="City / Metropolitan Area *"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  error={fieldErrors.city}
-                  placeholder="e.g. New Cairo, El Gouna, Zamalek"
-                  className="text-xs"
-                />
-              </div>
-
-              <div>
-                <Input
-                  label="Exclusive District / Neighborhood"
-                  value={neighborhood}
-                  onChange={(e) => setNeighborhood(e.target.value)}
-                  error={fieldErrors.neighborhood}
-                  placeholder="e.g. LakeView, Marina District"
-                  className="text-xs"
-                />
-              </div>
-
-              <div>
-                <Input
-                  label="Street Address / Residence Reference"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  error={fieldErrors.address}
-                  placeholder="e.g. 14 Palm Avenue"
-                  className="text-xs"
-                />
-              </div>
-
-              <div>
-                <Input
-                  label="Latitude Coordinate (Optional)"
-                  type="number"
-                  step="any"
-                  value={latitude}
-                  onChange={(e) => setLatitude(e.target.value)}
-                  placeholder="e.g. 30.0444"
-                  className="text-xs"
-                />
-              </div>
-
-              <div>
-                <Input
-                  label="Longitude Coordinate (Optional)"
-                  type="number"
-                  step="any"
-                  value={longitude}
-                  onChange={(e) => setLongitude(e.target.value)}
-                  placeholder="e.g. 31.2357"
-                  className="text-xs"
-                />
-              </div>
-            </div>
+            <PropertyLocationPicker
+              country={country}
+              setCountry={setCountry}
+              city={city}
+              setCity={setCity}
+              neighborhood={neighborhood}
+              setNeighborhood={setNeighborhood}
+              address={address}
+              setAddress={setAddress}
+              latitude={latitude}
+              setLatitude={setLatitude}
+              longitude={longitude}
+              setLongitude={setLongitude}
+              errors={fieldErrors}
+            />
           </div>
         )}
 

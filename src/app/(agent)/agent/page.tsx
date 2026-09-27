@@ -17,10 +17,15 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { getUserRoleState } from "@/lib/auth/getRole";
-import { getAgentDashboardStats } from "@/lib/properties/queries";
+import {
+  getAgentDashboardStats,
+  getAgentPropertyAnalytics,
+  getAgentResponseVelocity,
+} from "@/lib/properties/queries";
 import { formatPropertyPrice } from "@/types/property";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
+import AgentAnalyticsSection from "@/components/agent/AgentAnalyticsSection";
 
 export const metadata: Metadata = {
   title: "Advisor Command Center | HAVEN",
@@ -29,8 +34,13 @@ export const metadata: Metadata = {
 };
 
 export default async function AgentOverviewPage() {
-  const { user, profile, agent } = await getUserRoleState();
-  const stats = await getAgentDashboardStats();
+  const [roleState, stats, analytics, velocity] = await Promise.all([
+    getUserRoleState(),
+    getAgentDashboardStats(),
+    getAgentPropertyAnalytics(),
+    getAgentResponseVelocity(),
+  ]);
+  const { user, profile, agent } = roleState;
 
   const displayName = profile?.full_name || "Licensed Advisor";
   const companyName = agent?.company_name || "HAVEN Private Brokerage";
@@ -209,7 +219,10 @@ export default async function AgentOverviewPage() {
         </div>
       </div>
 
-      {/* 3. Dual Pipeline Workspace: Recent Inquiries + Recent Listings */}
+      {/* 3. Marketplace Performance & Analytics Layer */}
+      <AgentAnalyticsSection analytics={analytics} velocity={velocity} />
+
+      {/* 4. Dual Pipeline Workspace: Recent Inquiries + Recent Listings */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left: Client Inquiries Pipeline */}
         <div className="space-y-4">
@@ -424,7 +437,7 @@ export default async function AgentOverviewPage() {
         </div>
       </div>
 
-      {/* 4. Quick Actions Strip */}
+      {/* 5. Quick Actions Strip */}
       <div className="rounded-2xl border border-divider bg-surface p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
         <div className="space-y-1">
           <h3 className="font-display text-base font-semibold text-foreground">

@@ -2,9 +2,9 @@ import { Suspense } from "react";
 import Link from "next/link";
 import Container from "@/components/layout/Container";
 import SectionHeading from "@/components/ui/SectionHeading";
-import PropertyGrid from "@/components/properties/PropertyGrid";
 import PropertyFiltersBar from "@/components/properties/PropertyFiltersBar";
-import PropertyPagination from "@/components/properties/PropertyPagination";
+import PropertyCatalogView from "@/components/properties/PropertyCatalogView";
+import RecentlyViewedTray from "@/components/properties/RecentlyViewedTray";
 import Button from "@/components/ui/Button";
 import {
   getPublishedProperties,
@@ -39,7 +39,7 @@ export default async function PropertiesPage({
 
   const favoriteIdSet = new Set(userFavoriteIds);
 
-  // Transform database composite objects into UI presentation card items
+  // Transform database composite objects into UI presentation card items with coordinates
   const cardProperties: Property[] = paginatedResult.data.map((item) => {
     const isSaved = favoriteIdSet.has(item.id);
     const formatted = formatPropertyCardData(item, isSaved);
@@ -48,6 +48,7 @@ export default async function PropertiesPage({
       title: formatted.title,
       slug: formatted.slug,
       price: formatted.formattedPrice,
+      rawPrice: item.price,
       location: formatted.location,
       image: formatted.coverImage,
       beds: formatted.bedrooms ?? 0,
@@ -56,6 +57,8 @@ export default async function PropertiesPage({
       listingType: formatted.listingType,
       propertyType: formatted.propertyType,
       agent: formatted.agent,
+      latitude: formatted.latitude,
+      longitude: formatted.longitude,
       isSaved,
     };
   });
@@ -70,6 +73,10 @@ export default async function PropertiesPage({
       filters.bedrooms !== undefined ||
       filters.bathrooms !== undefined ||
       filters.min_area !== undefined ||
+      filters.min_lat !== undefined ||
+      filters.max_lat !== undefined ||
+      filters.min_lng !== undefined ||
+      filters.max_lng !== undefined ||
       (filters.features && filters.features.length > 0)
   );
 
@@ -88,7 +95,7 @@ export default async function PropertiesPage({
           <PropertyFiltersBar totalCount={paginatedResult.count} />
         </Suspense>
 
-        {/* Property Grid Display or Empty State */}
+        {/* Property Grid / Split / Map Catalog View or Empty State */}
         <div className="mt-8">
           {paginatedResult.count === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-divider bg-surface/50 py-16 px-6 text-center">
@@ -100,7 +107,7 @@ export default async function PropertiesPage({
               </h3>
               <p className="font-sans text-xs sm:text-sm text-muted max-w-sm mt-1.5 leading-relaxed">
                 {hasActiveFilters
-                  ? "We couldn't find any listings matching your specific filter criteria. Try adjusting or clearing your filters."
+                  ? "We couldn't find any listings matching your specific filter criteria or map boundary. Try adjusting or clearing your filters."
                   : "There are currently no published residences available in the catalog. Please check back soon."}
               </p>
               {hasActiveFilters && (
@@ -119,17 +126,19 @@ export default async function PropertiesPage({
               )}
             </div>
           ) : (
-            <PropertyGrid properties={cardProperties} />
+            <Suspense fallback={null}>
+              <PropertyCatalogView
+                properties={cardProperties}
+                totalCount={paginatedResult.count}
+                currentPage={paginatedResult.page}
+                totalPages={paginatedResult.totalPages}
+              />
+            </Suspense>
           )}
         </div>
 
-        {/* URL-based Pagination */}
-        <Suspense fallback={null}>
-          <PropertyPagination
-            currentPage={paginatedResult.page}
-            totalPages={paginatedResult.totalPages}
-          />
-        </Suspense>
+        {/* Recently Viewed Properties Tray */}
+        <RecentlyViewedTray className="mt-12" />
       </Container>
     </div>
   );

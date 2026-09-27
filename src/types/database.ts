@@ -112,6 +112,7 @@ export interface Database {
           address: string | null;
           latitude: number | null;
           longitude: number | null;
+          price_per_sqm: number | null;
           status: "draft" | "published" | "archived";
           created_at: string;
           updated_at: string;
@@ -142,6 +143,7 @@ export interface Database {
           address?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          price_per_sqm?: number | null;
           status?: "draft" | "published" | "archived";
           created_at?: string;
           updated_at?: string;
@@ -172,6 +174,7 @@ export interface Database {
           address?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          price_per_sqm?: number | null;
           status?: "draft" | "published" | "archived";
           created_at?: string;
           updated_at?: string;
@@ -357,6 +360,7 @@ export interface Database {
           property_id: string;
           message: string;
           status: "new" | "contacted" | "closed";
+          first_contacted_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -367,6 +371,7 @@ export interface Database {
           property_id: string;
           message: string;
           status?: "new" | "contacted" | "closed";
+          first_contacted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -377,6 +382,7 @@ export interface Database {
           property_id?: string;
           message?: string;
           status?: "new" | "contacted" | "closed";
+          first_contacted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -403,6 +409,43 @@ export interface Database {
             foreignKeyName: "inquiries_property_id_fkey";
             columns: ["property_id"];
             referencedRelation: "properties";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      property_views: {
+        Row: {
+          id: string;
+          property_id: string;
+          viewer_id: string | null;
+          session_id: string;
+          viewed_at: string;
+        };
+        Insert: {
+          id?: string;
+          property_id: string;
+          viewer_id?: string | null;
+          session_id: string;
+          viewed_at?: string;
+        };
+        Update: {
+          id?: string;
+          property_id?: string;
+          viewer_id?: string | null;
+          session_id?: string;
+          viewed_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "property_views_property_id_fkey";
+            columns: ["property_id"];
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "property_views_viewer_id_fkey";
+            columns: ["viewer_id"];
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -437,6 +480,42 @@ export interface Database {
           p_status: "contacted" | "closed";
         };
         Returns: Database["public"]["Tables"]["inquiries"]["Row"];
+      };
+      record_property_view: {
+        Args: {
+          p_property_id: string;
+          p_session_id: string;
+        };
+        Returns: boolean;
+      };
+      get_agent_property_analytics: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          property_id: string;
+          property_title: string;
+          property_slug: string;
+          property_price: number;
+          property_status: string;
+          property_city: string;
+          property_cover_image: string;
+          views_count: number;
+          unique_viewers_count: number;
+          favorites_count: number;
+          inquiries_count: number;
+          inquiry_conversion_rate: number;
+          created_at: string;
+        }[];
+      };
+      get_agent_response_velocity: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          total_inquiries: number;
+          responded_inquiries: number;
+          pending_inquiries: number;
+          avg_response_hours: number;
+          avg_response_seconds: number;
+          fastest_response_hours: number;
+        }[];
       };
     };
     Enums: Record<string, never>;

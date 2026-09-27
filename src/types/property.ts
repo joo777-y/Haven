@@ -79,6 +79,8 @@ export interface PropertyCardData {
     companyName: string | null;
     professionalTitle: string | null;
   } | null;
+  latitude: number | null;
+  longitude: number | null;
   createdAt: string;
 }
 
@@ -94,7 +96,11 @@ export interface PropertyFilters {
   bathrooms?: number;
   min_area?: number;
   features?: string[];
-  sort?: "newest" | "price_asc" | "price_desc";
+  min_lat?: number;
+  max_lat?: number;
+  min_lng?: number;
+  max_lng?: number;
+  sort?: "newest" | "price_asc" | "price_desc" | "price_sqm" | "bedrooms";
   page?: number;
   limit?: number;
 }
@@ -109,6 +115,20 @@ export interface PaginatedResult<T> {
 }
 
 export type PaginatedProperties = PaginatedResult<PropertyWithDetails>;
+
+// Lightweight browser-local recently viewed property item
+export interface RecentlyViewedItem {
+  id: string;
+  slug: string;
+  title: string;
+  price: number;
+  formattedPrice?: string;
+  city: string;
+  country: string;
+  coverImage: string;
+  propertyType: string;
+  viewedAt: number;
+}
 
 /**
  * Resolves the primary cover image from a list of property images.
@@ -195,6 +215,8 @@ export function formatPropertyCardData(
           professionalTitle: property.agents_public.professional_title,
         }
       : null,
+    latitude: property.latitude !== null && property.latitude !== undefined ? Number(property.latitude) : null,
+    longitude: property.longitude !== null && property.longitude !== undefined ? Number(property.longitude) : null,
     createdAt: property.created_at,
   };
 }

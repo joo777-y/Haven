@@ -27,6 +27,9 @@ export interface Property {
     companyName?: string | null;
     professionalTitle?: string | null;
   } | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  rawPrice?: number;
   isSaved?: boolean;
 }
 
@@ -34,12 +37,18 @@ export interface PropertyCardProps {
   property: Property;
   onSaveToggle?: (id: string) => void;
   className?: string;
+  isSelected?: boolean;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 export default function PropertyCard({
   property,
   onSaveToggle,
   className = "",
+  isSelected = false,
+  onMouseEnter,
+  onMouseLeave,
 }: PropertyCardProps) {
   const [isSaved, setIsSaved] = useState(property.isSaved || false);
   const [imageError, setImageError] = useState(false);
@@ -55,7 +64,13 @@ export default function PropertyCard({
 
   return (
     <article
-      className={`group relative flex flex-col overflow-hidden rounded-2xl border border-divider bg-surface transition-all duration-300 hover:border-secondary/30 hover:shadow-card ${className}`}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border bg-surface transition-all duration-300 ${
+        isSelected
+          ? "border-secondary ring-2 ring-secondary/40 shadow-lg scale-[1.01]"
+          : "border-divider hover:border-secondary/30 hover:shadow-card"
+      } ${className}`}
     >
       {/* Image & Overlay Header */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-background">

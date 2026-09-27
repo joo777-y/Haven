@@ -5,11 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import {
   propertySchema,
   inquiryCreateSchema,
+  geocodeLocationSchema,
   LISTING_TYPES,
   PROPERTY_TYPES,
   PROPERTY_STATUSES,
   type PropertyInput,
 } from "@/lib/validations/property";
+import { getGeocoder } from "@/lib/geocoding";
 import type { PropertyStatus } from "@/types/property";
 
 const UUID_REGEX =
@@ -1556,5 +1558,72 @@ export async function deleteInquiryNoteAction(
   revalidatePath("/agent/inquiries");
   return { success: true };
 }
+
+/**
+ * Server action to geocode a property's location using the pluggable Geocoder service.
+ * Enforces server-side authentication, input validation, and coordinate bounds checks.
+ */
+export async function geocodePropertyLocationAction(rawInput: unknown): Promise<
+  ActionResult<{
+    latitude: number;
+    longitude: number;
+    displayName: string;
+  }>
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { success: false, error: "Authentication required to perform geocoding." };
+  }
+
+  const parsed = geocodeLocationSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message || "Invalid location input.",
+    };
+  }
+
+  const { country, city, neighborhood, address } = parsed.data;
+
+  try {
+    const geocoder = getGeocoder();
+    const result = await geocoder.geocode({
+      country,
+      city,
+      neighborhood,
+      address,
+    });
+
+    if (!result) {
+      return {
+        success: false,
+        error:
+          "Location could not be determined. Please check the address or enter coordinates manually.",
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        latitude: result.latitude,
+        longitude: result.longitude,
+        displayName: result.displayName,
+      },
+    };
+  } catch (error) {
+    console.error("Geocoding action error:", error);
+    return {
+      success: false,
+      error:
+        "An unexpected error occurred while communicating with the geocoding service.",
+    };
+  }
+}
+
 
 

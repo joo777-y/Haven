@@ -7,6 +7,8 @@ export interface PropertyGridProps {
   emptyTitle?: string;
   emptyDescription?: string;
   onSaveToggle?: (id: string) => void;
+  selectedPropertyId?: string | null;
+  onPropertyHover?: (id: string | null) => void;
   className?: string;
 }
 
@@ -16,6 +18,8 @@ export default function PropertyGrid({
   emptyTitle = "No properties found",
   emptyDescription = "Try adjusting your search criteria or resetting filters to explore available listings.",
   onSaveToggle,
+  selectedPropertyId,
+  onPropertyHover,
   className = "",
 }: PropertyGridProps) {
   // Skeleton loader cards
@@ -69,6 +73,9 @@ export default function PropertyGrid({
           key={property.id}
           property={property}
           onSaveToggle={onSaveToggle}
+          isSelected={selectedPropertyId === property.id}
+          onMouseEnter={onPropertyHover ? () => onPropertyHover(property.id) : undefined}
+          onMouseLeave={onPropertyHover ? () => onPropertyHover(null) : undefined}
         />
       ))}
     </div>

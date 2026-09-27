@@ -15,6 +15,7 @@ import {
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
+import PropertyLocationPicker from "@/components/properties/PropertyLocationPicker";
 import {
   LISTING_TYPES,
   PROPERTY_TYPES,
@@ -334,70 +335,31 @@ export default function PropertyForm({
         </div>
       </div>
 
-      {/* 3. Location Details */}
+      {/* 3. Location Details & Geocoding */}
       <div className="rounded-2xl border border-divider bg-surface p-6 sm:p-8 space-y-6 shadow-xs">
         <div className="border-b border-divider pb-4">
           <h2 className="font-display text-xl font-semibold text-foreground">
             3. Location & Address
           </h2>
           <p className="text-xs text-muted mt-1">
-            Define city, neighborhood, and optional GPS coordinates.
+            Define country, city, neighborhood, address, and automated or manual GPS coordinates.
           </p>
         </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Input
-              label="Country *"
-              placeholder="Egypt"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              required
-            />
-
-            <Input
-              label="City *"
-              placeholder="e.g. El Gouna, Cairo"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              required
-            />
-
-            <Input
-              label="Neighborhood"
-              placeholder="e.g. Marina District, Zamalek"
-              value={neighborhood}
-              onChange={(e) => setNeighborhood(e.target.value)}
-            />
-          </div>
-
-          <Input
-            label="Street Address / Building"
-            placeholder="Optional precise address for internal records"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Latitude (Optional)"
-              type="number"
-              step="any"
-              placeholder="27.3949"
-              value={latitude}
-              onChange={(e) => setLatitude(e.target.value)}
-            />
-
-            <Input
-              label="Longitude (Optional)"
-              type="number"
-              step="any"
-              placeholder="33.6766"
-              value={longitude}
-              onChange={(e) => setLongitude(e.target.value)}
-            />
-          </div>
-        </div>
+        <PropertyLocationPicker
+          country={country}
+          setCountry={setCountry}
+          city={city}
+          setCity={setCity}
+          neighborhood={neighborhood}
+          setNeighborhood={setNeighborhood}
+          address={address}
+          setAddress={setAddress}
+          latitude={latitude}
+          setLatitude={setLatitude}
+          longitude={longitude}
+          setLongitude={setLongitude}
+        />
       </div>
 
       {/* 4. Features & Amenities */}

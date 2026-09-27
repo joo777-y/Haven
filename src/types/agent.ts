@@ -46,3 +46,38 @@ export interface AgentInquiryFilters {
   status?: "all" | InquiryStatus;
   query?: string;
 }
+
+export interface AgentPropertyAnalytics {
+  property_id: string;
+  property_title: string;
+  property_slug: string;
+  property_price: number;
+  property_status: PropertyStatus | string;
+  property_city: string;
+  property_cover_image: string;
+  views_count: number;
+  unique_viewers_count: number;
+  favorites_count: number;
+  inquiries_count: number;
+  inquiry_conversion_rate: number;
+  created_at: string;
+  price_per_sqm: number | null;
+}
+
+export interface AgentAnalyticsSummary {
+  totalViews: number;
+  totalUniqueViewers: number;
+  totalFavorites: number;
+  totalInquiries: number;
+  overallConversionRate: number;
+}
+
+export interface AgentResponseVelocity {
+  total_inquiries: number;
+  responded_inquiries: number;
+  pending_inquiries: number;
+  avg_response_hours: number | null;
+  avg_response_seconds: number | null;
+  fastest_response_hours: number | null;
+}
+

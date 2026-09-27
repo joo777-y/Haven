@@ -124,7 +124,14 @@ export const propertyFilterSchema = z.object({
   features: z
     .union([z.string().transform((v) => [v]), z.array(z.string())])
     .optional(),
-  sort: z.enum(["newest", "price_asc", "price_desc"]).default("newest"),
+  minLat: z.coerce.number().min(-90).max(90).optional(),
+  maxLat: z.coerce.number().min(-90).max(90).optional(),
+  minLng: z.coerce.number().min(-180).max(180).optional(),
+  maxLng: z.coerce.number().min(-180).max(180).optional(),
+  view: z.enum(["list", "split", "map"]).optional(),
+  sort: z
+    .enum(["newest", "price_asc", "price_desc", "price_sqm", "bedrooms"])
+    .default("newest"),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(12),
 });
@@ -181,6 +188,10 @@ export function parseFilterParams(
     bathrooms: data.bathrooms,
     min_area: data.minArea,
     features: data.features,
+    min_lat: data.minLat,
+    max_lat: data.maxLat,
+    min_lng: data.minLng,
+    max_lng: data.maxLng,
     sort: data.sort,
     page: data.page,
     limit: data.limit,
@@ -316,3 +327,16 @@ export const wizardStep3Schema = z.object({
     .optional()
     .default([]),
 });
+
+/**
+ * Schema for geocoding an address query
+ */
+export const geocodeLocationSchema = z.object({
+  country: z.string().trim().max(100).optional(),
+  city: z.string().trim().min(1, "City is required for geocoding").max(100),
+  neighborhood: z.string().trim().max(100).optional(),
+  address: z.string().trim().max(255).optional(),
+});
+
+export type GeocodeLocationInput = z.infer<typeof geocodeLocationSchema>;
+

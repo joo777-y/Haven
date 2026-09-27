@@ -9,6 +9,8 @@ import PropertyGallery from "@/components/properties/PropertyGallery";
 import FavoriteButton from "@/components/properties/FavoriteButton";
 import SaveToCollectionButton from "@/components/collections/SaveToCollectionButton";
 import ContactAgentForm from "@/components/properties/ContactAgentForm";
+import RecentlyViewedTracker from "@/components/properties/RecentlyViewedTracker";
+import PropertyLocationMap from "@/components/properties/PropertyLocationMap";
 import type { Property } from "@/components/properties/PropertyCard";
 import {
   getPropertyBySlug,
@@ -81,12 +83,7 @@ export default async function PropertyDetailsPage({
 
   // Fetch similar properties and user favorite IDs in parallel
   const [similarProperties, userFavoriteIds] = await Promise.all([
-    getSimilarProperties(
-      property.id,
-      property.property_type,
-      property.city,
-      3
-    ),
+    getSimilarProperties(property, 3),
     getUserFavoritePropertyIds(),
   ]);
 
@@ -128,9 +125,25 @@ export default async function PropertyDetailsPage({
 
   // Safe agent projection from agents_public
   const agent = property.agents_public;
+  const coverUrl = getCoverImageUrl(property.property_images);
 
   return (
     <div className="py-10 space-y-12">
+      {/* Client-side Recently Viewed History Tracker */}
+      <RecentlyViewedTracker
+        property={{
+          id: property.id,
+          slug: property.slug,
+          title: property.title,
+          price: Number(property.price),
+          formattedPrice: formattedPrice,
+          city: property.city,
+          country: property.country,
+          coverImage: coverUrl,
+          propertyType: property.property_type,
+        }}
+      />
+
       <Container>
         {/* Navigation Breadcrumb */}
         <Link
@@ -293,6 +306,18 @@ export default async function PropertyDetailsPage({
                 </p>
               )}
             </div>
+
+            {/* Neighborhood & Location Map Section */}
+            <PropertyLocationMap
+              latitude={property.latitude !== null ? Number(property.latitude) : null}
+              longitude={property.longitude !== null ? Number(property.longitude) : null}
+              title={property.title}
+              address={property.address}
+              neighborhood={property.neighborhood}
+              city={property.city}
+              country={property.country}
+              formattedPrice={formattedPrice}
+            />
           </div>
 
           {/* Right Column: Safe Advisor Contact Card */}

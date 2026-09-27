@@ -8,7 +8,11 @@ import {
   PropertyType,
   getCoverImageUrl,
 } from "@/types/property";
-import type { AgentDashboardStats } from "@/types/agent";
+import type {
+  AgentDashboardStats,
+  AgentPropertyAnalytics,
+  AgentResponseVelocity,
+} from "@/types/agent";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -136,6 +140,14 @@ export async function getPublishedProperties(
     }
   }
 
+  // Geographic bounds filter (from interactive map Search This Area)
+  if (filters.min_lat !== undefined && filters.max_lat !== undefined) {
+    query = query.gte("latitude", filters.min_lat).lte("latitude", filters.max_lat);
+  }
+  if (filters.min_lng !== undefined && filters.max_lng !== undefined) {
+    query = query.gte("longitude", filters.min_lng).lte("longitude", filters.max_lng);
+  }
+
   // Sorting
   switch (filters.sort) {
     case "price_asc":
@@ -212,32 +224,164 @@ export async function getPropertyBySlug(
 }
 
 /**
- * Fetches up to `limit` similar properties matching the same property_type or city,
- * excluding the specified property ID.
+ * Rule-based recommendation engine for similar architectural properties.
+ * Scores candidates using the Phase 11 multi-factor model:
+ * - Same property type: +40
+ * - Same city: +30 (or same country: +15)
+ * - Same neighborhood: +20
+ * - Price proximity (±25%): +20
+ * - Shared architectural amenities: +5 each
+ *
+ * Excludes current property and restricts strictly to published status.
  */
+export async function getSimilarProperties(
+  property: PropertyWithDetails,
+  limit?: number
+): Promise<PropertyWithDetails[]>;
 export async function getSimilarProperties(
   propertyId: string,
   propertyType: string,
   city: string,
-  limit = 3
+  limit?: number
+): Promise<PropertyWithDetails[]>;
+export async function getSimilarProperties(
+  propertyOrId: PropertyWithDetails | string,
+  arg2?: string | number,
+  arg3?: string,
+  arg4 = 3
 ): Promise<PropertyWithDetails[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let targetId: string;
+  let targetType: string | undefined;
+  let targetCity: string | undefined;
+  let targetCountry: string | undefined;
+  let targetNeighborhood: string | null = null;
+  let targetPrice: number | undefined;
+  let targetFeatures: string[] = [];
+  let limit = 3;
+
+  if (typeof propertyOrId === "object" && propertyOrId !== null) {
+    targetId = propertyOrId.id;
+    targetType = propertyOrId.property_type;
+    targetCity = propertyOrId.city;
+    targetCountry = propertyOrId.country;
+    targetNeighborhood = propertyOrId.neighborhood ?? null;
+    targetPrice = Number(propertyOrId.price);
+    targetFeatures = (propertyOrId.property_features || []).map((f) => f.feature);
+    limit = typeof arg2 === "number" ? arg2 : 3;
+  } else {
+    targetId = propertyOrId;
+    targetType = typeof arg2 === "string" ? arg2 : undefined;
+    targetCity = typeof arg3 === "string" ? arg3 : undefined;
+    limit = typeof arg4 === "number" ? arg4 : 3;
+  }
+
+  // 1. Fetch a bounded candidate pool of published properties (max 25)
+  let candidateQuery = supabase
     .from("properties")
     .select(PROPERTY_DETAILS_SELECT)
     .eq("status", "published")
-    .neq("id", propertyId)
-    .or(`property_type.eq.${propertyType},city.ilike.%${city}%`)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .neq("id", targetId);
 
-  if (error) {
-    console.error("Error fetching similar properties:", error);
-    return [];
+  if (targetType && targetCity) {
+    const escapedCity = targetCity.trim().replace(/'/g, "''");
+    candidateQuery = candidateQuery.or(
+      `property_type.eq.${targetType},city.ilike.%${escapedCity}%`
+    );
+  } else if (targetType) {
+    candidateQuery = candidateQuery.eq("property_type", targetType as any);
   }
 
-  return (data || []) as unknown as PropertyWithDetails[];
+  const { data: candidates, error } = await candidateQuery
+    .order("created_at", { ascending: false })
+    .limit(25);
+
+  if (error || !candidates || candidates.length === 0) {
+    if (error) {
+      console.error("Error fetching candidate properties for recommendations:", error);
+    }
+    // Fallback: fetch most recent published properties excluding targetId
+    const { data: fallbackData } = await supabase
+      .from("properties")
+      .select(PROPERTY_DETAILS_SELECT)
+      .eq("status", "published")
+      .neq("id", targetId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    return (fallbackData || []) as unknown as PropertyWithDetails[];
+  }
+
+  const targetFeatureSet = new Set(
+    targetFeatures.map((f) => f.toLowerCase().trim())
+  );
+
+  // 2. Score candidates in server-side TypeScript
+  const scored = (candidates as unknown as PropertyWithDetails[]).map((candidate) => {
+    let score = 0;
+
+    // A. Same property type (+40)
+    if (targetType && candidate.property_type === targetType) {
+      score += 40;
+    }
+
+    // B. Same city (+30) or country (+15)
+    if (targetCity && candidate.city?.toLowerCase() === targetCity.toLowerCase()) {
+      score += 30;
+    } else if (
+      targetCountry &&
+      candidate.country?.toLowerCase() === targetCountry.toLowerCase()
+    ) {
+      score += 15;
+    }
+
+    // C. Same exclusive neighborhood (+20)
+    if (
+      targetNeighborhood &&
+      candidate.neighborhood &&
+      candidate.neighborhood.toLowerCase().trim() ===
+        targetNeighborhood.toLowerCase().trim()
+    ) {
+      score += 20;
+    }
+
+    // D. Price proximity within ±25% (+20)
+    if (targetPrice && candidate.price) {
+      const candPrice = Number(candidate.price);
+      const minPrice = targetPrice * 0.75;
+      const maxPrice = targetPrice * 1.25;
+      if (candPrice >= minPrice && candPrice <= maxPrice) {
+        score += 20;
+      }
+    }
+
+    // E. Shared architectural amenities (+5 each)
+    if (targetFeatureSet.size > 0 && candidate.property_features) {
+      let sharedCount = 0;
+      for (const feat of candidate.property_features) {
+        if (targetFeatureSet.has(feat.feature.toLowerCase().trim())) {
+          sharedCount++;
+        }
+      }
+      score += sharedCount * 5;
+    }
+
+    return { candidate, score };
+  });
+
+  // 3. Sort by score descending, with newer listings as tiebreaker
+  scored.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return (
+      new Date(b.candidate.created_at).getTime() -
+      new Date(a.candidate.created_at).getTime()
+    );
+  });
+
+  return scored.slice(0, limit).map((s) => s.candidate);
 }
 
 /**
@@ -832,4 +976,103 @@ export async function getAgentPropertiesWithFilters(filters: {
 
   return (data || []) as unknown as PropertyWithDetails[];
 }
+
+/**
+ * Fetches aggregated property performance analytics for the authenticated advisor
+ * via the secure get_agent_property_analytics() database RPC.
+ * Identity is resolved strictly on the server from auth.uid().
+ */
+export async function getAgentPropertyAnalytics(): Promise<AgentPropertyAnalytics[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("get_agent_property_analytics");
+
+  if (error) {
+    console.error("Error fetching agent property analytics:", error.message);
+    return [];
+  }
+
+  // Fetch stored database-generated price_per_sqm for the returned properties
+  const propertyIds = (data || []).map((row) => row.property_id);
+  const pricePerSqmMap: Record<string, number | null> = {};
+
+  if (propertyIds.length > 0) {
+    const { data: propRows, error: propError } = await supabase
+      .from("properties")
+      .select("id, price_per_sqm")
+      .in("id", propertyIds);
+
+    if (!propError && propRows) {
+      for (const p of propRows) {
+        pricePerSqmMap[p.id] =
+          p.price_per_sqm !== null && p.price_per_sqm !== undefined
+            ? Number(p.price_per_sqm)
+            : null;
+      }
+    }
+  }
+
+  return (data || []).map((row) => ({
+    property_id: row.property_id,
+    property_title: row.property_title,
+    property_slug: row.property_slug,
+    property_price: Number(row.property_price) || 0,
+    property_status: row.property_status,
+    property_city: row.property_city,
+    property_cover_image: row.property_cover_image || "",
+    views_count: Number(row.views_count) || 0,
+    unique_viewers_count: Number(row.unique_viewers_count) || 0,
+    favorites_count: Number(row.favorites_count) || 0,
+    inquiries_count: Number(row.inquiries_count) || 0,
+    inquiry_conversion_rate: Number(row.inquiry_conversion_rate) || 0,
+    created_at: row.created_at,
+    price_per_sqm: pricePerSqmMap[row.property_id] ?? null,
+  }));
+}
+
+/**
+ * Fetches advisor response velocity metrics via get_agent_response_velocity() RPC.
+ * Identity is resolved strictly on the server from auth.uid().
+ */
+export async function getAgentResponseVelocity(): Promise<AgentResponseVelocity | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("get_agent_response_velocity");
+
+  if (error) {
+    console.error("Error fetching agent response velocity:", error.message);
+    return null;
+  }
+
+  const row = data?.[0];
+  if (!row) {
+    return {
+      total_inquiries: 0,
+      responded_inquiries: 0,
+      pending_inquiries: 0,
+      avg_response_hours: null,
+      avg_response_seconds: null,
+      fastest_response_hours: null,
+    };
+  }
+
+  return {
+    total_inquiries: Number(row.total_inquiries) || 0,
+    responded_inquiries: Number(row.responded_inquiries) || 0,
+    pending_inquiries: Number(row.pending_inquiries) || 0,
+    avg_response_hours:
+      row.avg_response_hours !== null && row.avg_response_hours !== undefined
+        ? Number(row.avg_response_hours)
+        : null,
+    avg_response_seconds:
+      row.avg_response_seconds !== null && row.avg_response_seconds !== undefined
+        ? Number(row.avg_response_seconds)
+        : null,
+    fastest_response_hours:
+      row.fastest_response_hours !== null && row.fastest_response_hours !== undefined
+        ? Number(row.fastest_response_hours)
+        : null,
+  };
+}
+
 

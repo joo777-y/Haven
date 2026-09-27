@@ -21,6 +21,7 @@ import { getDashboardOverviewData } from "@/lib/collections/queries";
 import { formatPropertyPrice } from "@/types/property";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
+import RecentlyViewedTray from "@/components/properties/RecentlyViewedTray";
 
 export const metadata: Metadata = {
   title: "Dashboard Overview | HAVEN Workspace",
@@ -420,6 +421,12 @@ export default async function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Recently Explored Residences Tray */}
+      <RecentlyViewedTray
+        title="Recently Explored Residences"
+        subtitle="Sanctuaries and estates you recently inspected during your exploration."
+      />
 
       {/* 4. Curated Portfolio Shortcuts Bar */}
       <div className="rounded-2xl border border-divider bg-surface p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
