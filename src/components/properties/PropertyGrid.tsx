@@ -20,12 +20,14 @@ export default function PropertyGrid({
   onSaveToggle,
   selectedPropertyId,
   onPropertyHover,
-  className = "",
+  className,
 }: PropertyGridProps) {
+  const gridClasses = className || "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8";
+
   // Skeleton loader cards
   if (isLoading) {
     return (
-      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 ${className}`}>
+      <div className={`grid ${gridClasses}`}>
         {Array.from({ length: 6 }).map((_, index) => (
           <div
             key={index}
@@ -67,7 +69,7 @@ export default function PropertyGrid({
 
   // Render Grid
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 ${className}`}>
+    <div className={`grid ${gridClasses}`}>
       {properties.map((property) => (
         <PropertyCard
           key={property.id}

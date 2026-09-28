@@ -200,13 +200,13 @@ export default function PropertyCatalogView({
 
       {viewMode === "split" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Property List (5 or 6 cols) */}
-          <div className="lg:col-span-6 xl:col-span-7 space-y-6">
+          {/* Left Column: Property List */}
+          <div className="lg:col-span-7 xl:col-span-7 space-y-6">
             <PropertyGrid
               properties={properties}
               selectedPropertyId={selectedPropertyId}
               onPropertyHover={setSelectedPropertyId}
-              className="grid-cols-1 md:grid-cols-2 lg:grid-cols-2"
+              className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-6"
             />
             <PropertyPagination
               currentPage={currentPage}
@@ -215,13 +215,13 @@ export default function PropertyCatalogView({
           </div>
 
           {/* Right Column: Sticky Interactive Catalog Map */}
-          <div className="lg:col-span-6 xl:col-span-5 lg:sticky lg:top-24 h-[500px] lg:h-[calc(100vh-140px)]">
+          <div className="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-24 h-[520px] lg:h-[calc(100vh-140px)] rounded-2xl overflow-hidden border border-divider shadow-card">
             <PropertyCatalogMap
               properties={properties}
               selectedPropertyId={selectedPropertyId}
               onSelectProperty={setSelectedPropertyId}
               onSearchArea={handleSearchArea}
-              className="h-full w-full shadow-lg"
+              className="h-full w-full"
             />
           </div>
         </div>
