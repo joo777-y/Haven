@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Building2 } from "lucide-react";
+import { getOptimizedImageUrl } from "@/lib/images/getOptimizedImageUrl";
 
 interface GalleryImage {
   id?: string;
@@ -14,6 +15,57 @@ interface GalleryImage {
 interface PropertyGalleryProps {
   images: GalleryImage[];
   title: string;
+}
+
+interface GalleryThumbnailProps {
+  image: GalleryImage;
+  idx: number;
+  title: string;
+  isSelected: boolean;
+  onSelect: () => void;
+}
+
+function GalleryThumbnail({
+  image,
+  idx,
+  title,
+  isSelected,
+  onSelect,
+}: GalleryThumbnailProps) {
+  const optimizedUrl = getOptimizedImageUrl(image.image_url, "thumbnail");
+  const [src, setSrc] = useState(optimizedUrl);
+
+  useEffect(() => {
+    setSrc(getOptimizedImageUrl(image.image_url, "thumbnail"));
+  }, [image.image_url]);
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`relative aspect-[4/3] w-24 sm:w-28 shrink-0 overflow-hidden rounded-xl border transition-all cursor-pointer bg-surface/50 ${
+        isSelected
+          ? "border-primary ring-2 ring-primary/20 shadow-xs opacity-100"
+          : "border-divider opacity-60 hover:opacity-100"
+      }`}
+    >
+      <Image
+        src={src}
+        alt={`${title} thumbnail ${idx + 1}`}
+        fill
+        unoptimized
+        sizes="120px"
+        className="object-cover"
+        onError={() => {
+          // If CDN transformation fails (e.g. source image exceeds processing resolution limit),
+          // seamlessly fall back to original storage URL so thumbnail is never broken
+          if (src !== image.image_url) {
+            setSrc(image.image_url);
+          }
+        }}
+      />
+    </button>
+  );
 }
 
 export default function PropertyGallery({
@@ -30,12 +82,22 @@ export default function PropertyGallery({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
 
-  const activeImage = sortedImages[selectedIndex]?.image_url;
+  const rawActiveImage = sortedImages[selectedIndex]?.image_url;
+  const [activeSrc, setActiveSrc] = useState(() =>
+    rawActiveImage ? getOptimizedImageUrl(rawActiveImage, "gallery") : ""
+  );
+
+  useEffect(() => {
+    if (rawActiveImage) {
+      setActiveSrc(getOptimizedImageUrl(rawActiveImage, "gallery"));
+      setImageError(false);
+    }
+  }, [rawActiveImage]);
 
   // Fallback when no images exist
-  if (!images || images.length === 0 || (!activeImage && imageError)) {
+  if (!images || images.length === 0 || (!rawActiveImage && imageError)) {
     return (
-      <div className="relative aspect-[16/9] md:aspect-[21/9] w-full overflow-hidden rounded-2xl border border-divider bg-surface flex flex-col items-center justify-center p-8 text-center shadow-xs">
+      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-divider bg-surface flex flex-col items-center justify-center p-8 text-center shadow-xs">
         <Building2 className="h-16 w-16 text-muted/30 mb-3" />
         <span className="font-display text-sm uppercase tracking-widest text-muted/70">
           Haven Architectural Collection
@@ -49,8 +111,8 @@ export default function PropertyGallery({
 
   return (
     <div className="space-y-4">
-      {/* Main Large Display Viewport */}
-      <div className="relative aspect-[16/10] md:aspect-[21/10] w-full overflow-hidden rounded-2xl border border-divider bg-background shadow-xs">
+      {/* Main Display Viewport - 16:9 / 16:10 for natural architectural framing */}
+      <div className="relative aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] max-h-[620px] w-full overflow-hidden rounded-2xl border border-divider bg-surface/30 shadow-xs">
         {imageError ? (
           <div className="flex h-full w-full flex-col items-center justify-center bg-surface p-8 text-center">
             <Building2 className="h-12 w-12 text-muted/30 mb-2" />
@@ -60,12 +122,19 @@ export default function PropertyGallery({
           </div>
         ) : (
           <Image
-            src={activeImage}
+            src={activeSrc}
             alt={`${title} - View ${selectedIndex + 1}`}
             fill
             priority
             unoptimized
-            onError={() => setImageError(true)}
+            onError={() => {
+              // If optimized transform fails (e.g. resolution > 50MP), fall back to original
+              if (activeSrc !== rawActiveImage && rawActiveImage) {
+                setActiveSrc(rawActiveImage);
+              } else {
+                setImageError(true);
+              }
+            }}
             sizes="(max-width: 1280px) 100vw, 1280px"
             className="object-cover transition-opacity duration-300"
           />
@@ -75,33 +144,19 @@ export default function PropertyGallery({
       {/* Thumbnail Strip (if multiple images available) */}
       {sortedImages.length > 1 && (
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
-          {sortedImages.map((img, idx) => {
-            const isSelected = idx === selectedIndex;
-
-            return (
-              <button
-                key={img.id || idx}
-                onClick={() => {
-                  setSelectedIndex(idx);
-                  setImageError(false);
-                }}
-                className={`relative aspect-[4/3] w-24 sm:w-28 shrink-0 overflow-hidden rounded-xl border transition-all cursor-pointer ${
-                  isSelected
-                    ? "border-primary ring-2 ring-primary/20 shadow-xs opacity-100"
-                    : "border-divider opacity-60 hover:opacity-100"
-                }`}
-              >
-                <Image
-                  src={img.image_url}
-                  alt={`${title} thumbnail ${idx + 1}`}
-                  fill
-                  unoptimized
-                  sizes="120px"
-                  className="object-cover"
-                />
-              </button>
-            );
-          })}
+          {sortedImages.map((img, idx) => (
+            <GalleryThumbnail
+              key={img.id || idx}
+              image={img}
+              idx={idx}
+              title={title}
+              isSelected={idx === selectedIndex}
+              onSelect={() => {
+                setSelectedIndex(idx);
+                setImageError(false);
+              }}
+            />
+          ))}
         </div>
       )}
     </div>

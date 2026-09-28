@@ -6,6 +6,7 @@ import { History, Trash2, MapPin, Building2, ExternalLink } from "lucide-react";
 import { useRecentlyViewed } from "@/lib/properties/recentlyViewed";
 import { formatPropertyPrice } from "@/types/property";
 import Button from "@/components/ui/Button";
+import { getOptimizedImageUrl } from "@/lib/images/getOptimizedImageUrl";
 
 interface RecentlyViewedTrayProps {
   title?: string;
@@ -78,7 +79,7 @@ export default function RecentlyViewedTray({
             >
               {property.coverImage ? (
                 <Image
-                  src={property.coverImage}
+                  src={getOptimizedImageUrl(property.coverImage, "card")}
                   alt={property.title}
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"

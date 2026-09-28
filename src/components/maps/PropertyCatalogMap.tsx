@@ -10,8 +10,13 @@ import {
   LngLatBounds,
   GeoJSONSource,
   MapMouseEvent,
+  setWorkerUrl,
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+
+if (typeof window !== "undefined") {
+  setWorkerUrl("/maplibre-gl-worker.mjs");
+}
 import { MAP_CONFIG } from "@/config/map";
 import {
   MapPin,

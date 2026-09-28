@@ -6,6 +6,7 @@ import { Heart, MapPin, Bed, Bath, Maximize2, Building2 } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import FavoriteButton from "./FavoriteButton";
 import SaveToCollectionButton from "@/components/collections/SaveToCollectionButton";
+import { getOptimizedImageUrl } from "@/lib/images/getOptimizedImageUrl";
 
 export interface Property {
   id: string;
@@ -83,7 +84,7 @@ export default function PropertyCard({
           </div>
         ) : (
           <img
-            src={property.image}
+            src={getOptimizedImageUrl(property.image, "card")}
             alt={property.title}
             onError={() => setImageError(true)}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -181,7 +182,7 @@ export default function PropertyCard({
             <div className="flex items-center gap-2 min-w-0">
               {property.agent.avatarUrl ? (
                 <img
-                  src={property.agent.avatarUrl}
+                  src={getOptimizedImageUrl(property.agent.avatarUrl, "thumbnail")}
                   alt={property.agent.fullName}
                   className="h-5 w-5 rounded-full object-cover border border-divider shrink-0"
                 />
