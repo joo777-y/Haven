@@ -11,6 +11,7 @@ import {
   PROPERTY_STATUSES,
   type PropertyInput,
 } from "@/lib/validations/property";
+import { sanitizeText, toSafeErrorMessage } from "@/lib/security/sanitize";
 import { getGeocoder } from "@/lib/geocoding";
 import type { PropertyStatus } from "@/types/property";
 
@@ -200,7 +201,7 @@ export async function createPropertyAction(
     console.error("Error creating property:", insertError);
     return {
       success: false,
-      error: insertError?.message || "Failed to create property listing.",
+      error: toSafeErrorMessage(insertError, "Failed to create property listing."),
     };
   }
 
@@ -1346,7 +1347,7 @@ export async function createInquiryAction(
     console.error("Error creating inquiry:", insertError);
     return {
       success: false,
-      error: insertError?.message || "Failed to submit inquiry. Please try again.",
+      error: toSafeErrorMessage(insertError, "Failed to submit inquiry. Please try again."),
     };
   }
 
@@ -1408,7 +1409,7 @@ export async function updateInquiryStatusAction(
     console.error("Error invoking update_inquiry_status RPC:", rpcError);
     return {
       success: false,
-      error: rpcError.message || "Failed to update inquiry status.",
+      error: toSafeErrorMessage(rpcError, "Failed to update inquiry status."),
     };
   }
 
@@ -1438,7 +1439,7 @@ export async function saveInquiryNoteAction(
     return { success: false, error: "Invalid inquiry identifier." };
   }
 
-  const trimmedNote = noteText.trim();
+  const trimmedNote = sanitizeText(noteText.trim());
   if (!trimmedNote) {
     return { success: false, error: "Note content cannot be empty." };
   }
@@ -1502,10 +1503,10 @@ export async function saveInquiryNoteAction(
     if (noteError.message?.includes("does not exist") || noteError.code === "42P01") {
       return {
         success: false,
-        error: "Database migration required: Table inquiry_notes is not yet created. Please apply migration 202609240002_create_inquiry_notes.sql.",
+        error: "Database migration required: Table inquiry_notes is not yet created.",
       };
     }
-    return { success: false, error: noteError.message || "Failed to save private note." };
+    return { success: false, error: toSafeErrorMessage(noteError, "Failed to save private note.") };
   }
 
   revalidatePath("/agent/inquiries");

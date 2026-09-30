@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sanitizeText } from "@/lib/security/sanitize";
 
 export const LISTING_TYPES = ["sale", "rent"] as const;
 export const PROPERTY_TYPES = [
@@ -21,11 +22,13 @@ export const propertySchema = z.object({
     .string()
     .trim()
     .min(5, "Title must be at least 5 characters")
-    .max(150, "Title cannot exceed 150 characters"),
+    .max(150, "Title cannot exceed 150 characters")
+    .transform(sanitizeText),
   description: z
     .string()
     .trim()
-    .min(10, "Description must be at least 10 characters"),
+    .min(10, "Description must be at least 10 characters")
+    .transform(sanitizeText),
   price: z.coerce
     .number()
     .min(0, "Price must be non-negative"),
@@ -146,8 +149,9 @@ export const inquiryCreateSchema = z.object({
   message: z
     .string()
     .trim()
-    .min(5, "Inquiry message must be at least 5 characters")
-    .max(2000, "Inquiry message cannot exceed 2000 characters"),
+    .transform((val) => sanitizeText(val))
+    .refine((val) => val.length >= 5, "Inquiry message must be at least 5 characters")
+    .refine((val) => val.length <= 2000, "Inquiry message cannot exceed 2000 characters"),
 });
 
 export type InquiryCreateInput = z.infer<typeof inquiryCreateSchema>;
@@ -232,11 +236,13 @@ export const wizardStep1Schema = z.object({
     .string()
     .trim()
     .min(5, "Title must be at least 5 characters")
-    .max(150, "Title cannot exceed 150 characters"),
+    .max(150, "Title cannot exceed 150 characters")
+    .transform(sanitizeText),
   description: z
     .string()
     .trim()
-    .min(10, "Description must be at least 10 characters"),
+    .min(10, "Description must be at least 10 characters")
+    .transform(sanitizeText),
   price: z.coerce
     .number()
     .min(1, "Price must be greater than zero"),

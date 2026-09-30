@@ -49,22 +49,50 @@ export async function generateMetadata({
 
   if (!property) {
     return {
-      title: "Property Not Found | HAVEN",
+      title: "Residence Not Found | HAVEN Luxury Real Estate",
       description: "The requested architectural property could not be found.",
     };
   }
 
   const coverUrl = getCoverImageUrl(property.property_images, "");
+  const locationSummary = [property.neighborhood, property.city, property.country]
+    .filter(Boolean)
+    .join(", ");
+  const pageTitle = `${property.title} — ${locationSummary} | HAVEN`;
+  const pageDescription =
+    property.description?.slice(0, 160) ||
+    `Explore ${property.title}, an exclusive luxury ${property.property_type} in ${locationSummary}.`;
+  const canonicalUrl = `https://haven.luxury/properties/${property.slug}`;
 
   return {
-    title: `${property.title} | HAVEN Luxury Real Estate`,
-    description:
-      property.description.slice(0, 160) ||
-      `Explore ${property.title}, a luxury ${property.property_type} in ${property.city}.`,
+    title: pageTitle,
+    description: pageDescription,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
-      title: property.title,
-      description: property.description.slice(0, 160),
-      images: coverUrl ? [{ url: coverUrl }] : [],
+      title: pageTitle,
+      description: pageDescription,
+      url: canonicalUrl,
+      siteName: "HAVEN Luxury Real Estate",
+      locale: "en_US",
+      type: "article",
+      images: coverUrl
+        ? [
+            {
+              url: coverUrl,
+              width: 1200,
+              height: 630,
+              alt: property.title,
+            },
+          ]
+        : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: pageTitle,
+      description: pageDescription,
+      images: coverUrl ? [coverUrl] : [],
     },
   };
 }
@@ -127,8 +155,90 @@ export default async function PropertyDetailsPage({
   const agent = property.agents_public;
   const coverUrl = getCoverImageUrl(property.property_images);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://haven.luxury";
+  const propertyUrl = `${siteUrl}/properties/${property.slug}`;
+
+  const jsonLdListing = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    name: property.title,
+    description: property.description,
+    url: propertyUrl,
+    image: coverUrl ? [coverUrl] : [],
+    datePosted: property.created_at,
+    offers: {
+      "@type": "Offer",
+      price: Number(property.price),
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+      validFrom: property.created_at,
+    },
+    ...(property.latitude && property.longitude
+      ? {
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: property.latitude,
+            longitude: property.longitude,
+          },
+        }
+      : {}),
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: property.address || undefined,
+      addressLocality: property.city,
+      addressRegion: property.neighborhood || undefined,
+      addressCountry: property.country,
+    },
+    numberOfRooms: property.bedrooms || undefined,
+    numberOfBathroomsTotal: property.bathrooms || undefined,
+    ...(property.area
+      ? {
+          floorSize: {
+            "@type": "QuantitativeValue",
+            value: property.area,
+            unitCode: "MTK",
+          },
+        }
+      : {}),
+  };
+
+  const jsonLdBreadcrumbs = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Properties",
+        item: `${siteUrl}/properties`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: property.title,
+        item: propertyUrl,
+      },
+    ],
+  };
+
   return (
     <div className="py-10 space-y-12">
+      {/* Schema.org Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdListing) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdBreadcrumbs) }}
+      />
+
       {/* Client-side Recently Viewed History Tracker */}
       <RecentlyViewedTracker
         property={{
