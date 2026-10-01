@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { getOptimizedImageUrl } from "@/lib/images/getOptimizedImageUrl";
 
 export interface LifestyleCategory {
   id: string;
@@ -8,6 +9,7 @@ export interface LifestyleCategory {
   image: string;
   listingCount?: number;
   description?: string;
+  href?: string;
 }
 
 export interface LifestyleCardProps {
@@ -19,17 +21,21 @@ export default function LifestyleCard({
   category,
   className = "",
 }: LifestyleCardProps) {
+  const targetHref = category.href || `/properties?category=${category.slug}`;
+  const optimizedImage = getOptimizedImageUrl(category.image, "card");
+
   return (
     <Link
-      href={`/properties?category=${category.slug}`}
+      href={targetHref}
       className={`group relative block aspect-[4/5] overflow-hidden rounded-2xl border border-divider bg-background shadow-xs transition-all duration-300 hover:shadow-card ${className}`}
     >
       {/* Background Image */}
       <img
-        src={category.image}
+        src={optimizedImage}
         alt={category.title}
         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
         loading="lazy"
+        decoding="async"
       />
 
       {/* Dark Vignette Gradient */}

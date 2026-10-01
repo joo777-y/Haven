@@ -15,10 +15,10 @@ export interface ImageTransformOptions {
 }
 
 export const IMAGE_PRESETS: Record<ImagePreset, ImageTransformOptions> = {
-  thumbnail: { width: 240, quality: 70, resize: "contain" },
-  card: { width: 640, quality: 75, resize: "contain" },
-  hero: { width: 1600, quality: 80, resize: "contain" },
-  gallery: { width: 1600, quality: 80, resize: "contain" },
+  thumbnail: { width: 320, height: 240, quality: 70, resize: "cover" },
+  card: { width: 640, height: 420, quality: 75, resize: "cover" },
+  hero: { width: 1280, height: 800, quality: 80, resize: "cover" },
+  gallery: { width: 1200, height: 750, quality: 80, resize: "cover" },
 };
 
 /**
@@ -42,7 +42,7 @@ export function getOptimizedImageUrl(
       : presetOrOptions;
 
   try {
-    const resizeMode = options.resize ?? "contain";
+    const resizeMode = options.resize ?? "cover";
 
     // 1. Supabase standard storage object URL
     // Format: .../storage/v1/object/public/<bucket>/<path>
