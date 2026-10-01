@@ -44,17 +44,17 @@ export default function HavenIntro() {
       }
     }
 
-    // Exact 2.5-second total timeline:
-    // 0ms - 1900ms: Solid opaque canvas with brand mark and typography animating in and holding in stillness.
-    // 1900ms - 2500ms (0.6s): Smooth dissolve & scale transition revealing the website underneath.
-    // 2500ms: Overlay unmounts completely.
+    // Snappy, refined 1.6-second total timeline:
+    // 0ms - 1200ms: Smooth entrance of brand composition and brief stillness
+    // 1200ms - 1600ms (0.4s): Fast, smooth dissolve reveal of the website
+    // 1600ms: Overlay unmounts completely
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
-    }, 1900);
+    }, 1200);
 
     const unmountTimer = setTimeout(() => {
       completeIntro();
-    }, 2500);
+    }, 1600);
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
