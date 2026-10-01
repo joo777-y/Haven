@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -35,6 +36,15 @@ export default function MobileMenu({
 }: MobileMenuProps) {
   const { user, profile, agent, isAgent, signOut } = useAuth();
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const displayName = profile?.full_name || user?.email?.split("@")[0] || "Member";
@@ -46,7 +56,7 @@ export default function MobileMenu({
     .slice(0, 2);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-xs transition-opacity md:hidden">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm transition-opacity md:hidden">
       {/* Overlay click */}
       <div className="absolute inset-0" onClick={onClose} />
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { getOptimizedImageUrl } from "@/lib/images/getOptimizedImageUrl";
+import HavenImage from "@/components/ui/HavenImage";
 
 export interface LifestyleCategory {
   id: string;
@@ -22,24 +22,23 @@ export default function LifestyleCard({
   className = "",
 }: LifestyleCardProps) {
   const targetHref = category.href || `/properties?category=${category.slug}`;
-  const optimizedImage = getOptimizedImageUrl(category.image, "card");
 
   return (
     <Link
       href={targetHref}
-      className={`group relative block aspect-[4/5] overflow-hidden rounded-2xl border border-divider bg-background shadow-xs transition-all duration-300 hover:shadow-card ${className}`}
+      className={`group relative block aspect-[4/5] overflow-hidden rounded-2xl border border-divider bg-background shadow-xs transition-all duration-300 hover:shadow-card focus:outline-none focus:ring-2 focus:ring-secondary/40 ${className}`}
     >
       {/* Background Image */}
-      <img
-        src={optimizedImage}
+      <HavenImage
+        src={category.image}
         alt={category.title}
-        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-        loading="lazy"
-        decoding="async"
+        preset="card"
+        containerClassName="h-full w-full absolute inset-0"
+        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105 transform-gpu will-change-transform"
       />
 
-      {/* Dark Vignette Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent transition-opacity group-hover:opacity-90" />
+      {/* Smooth Editorial Dark Vignette Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent transition-opacity group-hover:opacity-90" />
 
       {/* Top Action Badge */}
       <div className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-surface/80 text-primary backdrop-blur-md transition-all group-hover:bg-primary group-hover:text-white">

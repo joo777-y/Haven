@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { MapPin, Bed, Bath, Maximize2, Building2, ArrowRight } from "lucide-react";
+import HavenImage from "@/components/ui/HavenImage";
 import Badge from "@/components/ui/Badge";
 import FavoriteButton from "./FavoriteButton";
 import SaveToCollectionButton from "@/components/collections/SaveToCollectionButton";
@@ -65,36 +66,43 @@ export default function PropertyCard({
     >
       {/* 1. Image Viewport */}
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-background shrink-0">
-        <Link href={`/properties/${property.slug}`} className="block h-full w-full">
-          {imageError || !property.image ? (
-            <div className="flex h-full w-full flex-col items-center justify-center bg-surface/80 p-6 text-center border-b border-divider">
-              <Building2 className="h-10 w-10 text-muted/40 mb-2" />
-              <span className="font-display text-[11px] tracking-wider uppercase text-muted/70">
-                Haven Collection
-              </span>
-            </div>
-          ) : (
-            <img
-              src={getOptimizedImageUrl(property.image, "card")}
-              alt={property.title}
-              onError={() => setImageError(true)}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
-            />
-          )}
+        <Link
+          href={`/properties/${property.slug}`}
+          tabIndex={-1}
+          aria-hidden="true"
+          className="block h-full w-full focus:outline-none"
+        >
+          <HavenImage
+            src={property.image}
+            alt={property.title}
+            preset="card"
+            containerClassName="h-full w-full"
+            className="transition-transform duration-500 group-hover:scale-105 transform-gpu will-change-transform"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-40 pointer-events-none" />
         </Link>
 
         {/* Top Badges & Actions */}
         <div className="absolute inset-x-3.5 top-3.5 flex items-center justify-between z-10 pointer-events-none">
           <div className="flex items-center gap-1.5 flex-wrap pointer-events-auto">
+            {/* Clear For Sale vs For Rent Classification Badge */}
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-xs ${
+                property.listingType === "rent"
+                  ? "bg-secondary text-white"
+                  : "bg-primary text-white"
+              }`}
+            >
+              {property.listingType === "rent" ? "For Rent" : "For Sale"}
+            </span>
+
             {property.propertyType && (
               <span className="rounded-full bg-surface/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground border border-divider shadow-xs">
                 {property.propertyType}
               </span>
             )}
             {property.badge && (
-              <Badge variant="secondary" size="sm" className="shadow-xs font-semibold text-[10px]">
+              <Badge variant="outline" size="sm" className="shadow-xs font-semibold text-[10px] bg-surface/90 text-foreground border-divider">
                 {property.badge}
               </Badge>
             )}
@@ -193,6 +201,8 @@ export default function PropertyCard({
 
           <Link
             href={`/properties/${property.slug}`}
+            tabIndex={-1}
+            aria-hidden="true"
             className="inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:text-primary transition-colors shrink-0 group/link"
           >
             <span>View</span>

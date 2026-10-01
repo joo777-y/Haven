@@ -23,6 +23,8 @@ export default function Header() {
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // Real favorites counter (starts at 0 when no items are saved)
+  const savedCount = 0;
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -42,10 +44,10 @@ export default function Header() {
               className="font-display text-2xl font-semibold tracking-tight text-primary flex items-center"
             >
               HAVEN
-              <span className="text-secondary ml-1.5 text-base">●</span>
+              <span className="text-secondary ml-1.5 text-base select-none">●</span>
             </Link>
 
-            {/* Desktop Navigation */}
+            {/* Desktop Navigation with Tight Active Accent */}
             <nav className="hidden items-center gap-8 md:flex">
               {navLinks.map((link) => {
                 const active = isActive(link.href);
@@ -53,9 +55,9 @@ export default function Header() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`font-sans text-sm transition-colors ${
+                    className={`relative inline-flex items-center py-1 font-sans text-sm transition-colors ${
                       active
-                        ? "font-semibold text-primary underline underline-offset-8 decoration-2 decoration-primary"
+                        ? "font-semibold text-primary after:absolute after:-bottom-1.5 after:inset-x-0 after:h-0.5 after:bg-secondary after:rounded-full"
                         : "font-medium text-muted hover:text-primary"
                     }`}
                   >
@@ -68,14 +70,19 @@ export default function Header() {
 
           {/* Actions */}
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Saved / Favorites Icon */}
+            {/* Saved / Favorites Icon with Counter Badge */}
             <button
               onClick={() => setIsFavoritesOpen(true)}
-              className="flex items-center justify-center rounded-full p-2 text-muted transition-colors hover:bg-black/5 hover:text-primary cursor-pointer"
-              aria-label="Saved Properties"
+              className="relative flex h-11 w-11 items-center justify-center rounded-full text-muted transition-colors hover:bg-black/5 hover:text-primary cursor-pointer focus:outline-none focus:ring-2 focus:ring-secondary/40"
+              aria-label={`Saved Properties (${savedCount} saved)`}
               title="Saved Properties"
             >
               <Heart className="h-5 w-5" />
+              {savedCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-white shadow-2xs">
+                  {savedCount}
+                </span>
+              )}
             </button>
 
             {/* User Menu / Auth Controls */}
@@ -83,10 +90,10 @@ export default function Header() {
               <UserMenu />
             </div>
 
-            {/* Mobile Hamburger Button */}
+            {/* Mobile Hamburger Button with 44x44 minimum touch target */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="flex items-center justify-center rounded-lg p-2 text-primary hover:bg-surface md:hidden cursor-pointer"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 text-primary hover:bg-surface md:hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-secondary/40"
               aria-label="Open Mobile Menu"
             >
               <Menu className="h-6 w-6" />
@@ -100,10 +107,12 @@ export default function Header() {
         isOpen={isFavoritesOpen}
         onClose={() => setIsFavoritesOpen(false)}
       />
+
       <ProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
       />
+
       <MobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}

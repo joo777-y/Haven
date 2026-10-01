@@ -8,26 +8,17 @@ interface FavoritesModalProps {
   onClose: () => void;
 }
 
-const initialFavorites = [
-  {
-    id: "1",
-    title: "Modern Minimalist Villa",
-    location: "Beverly Hills, CA",
-    price: "$2,450,000",
-    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80",
-    beds: 4,
-    baths: 3,
-  },
-  {
-    id: "2",
-    title: "Luxury Penthouse Suite",
-    location: "Downtown, New York",
-    price: "$4,100,000",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80",
-    beds: 3,
-    baths: 3.5,
-  },
-];
+interface SavedPropertyItem {
+  id: string;
+  title: string;
+  location: string;
+  price: string;
+  image: string;
+  beds: number;
+  baths: number;
+}
+
+const initialFavorites: SavedPropertyItem[] = [];
 
 export default function FavoritesModal({ isOpen, onClose }: FavoritesModalProps) {
   if (!isOpen) return null;

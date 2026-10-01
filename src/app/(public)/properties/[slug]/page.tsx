@@ -11,6 +11,7 @@ import SaveToCollectionButton from "@/components/collections/SaveToCollectionBut
 import ContactAgentForm from "@/components/properties/ContactAgentForm";
 import RecentlyViewedTracker from "@/components/properties/RecentlyViewedTracker";
 import PropertyLocationMap from "@/components/properties/PropertyLocationMap";
+import HavenImage from "@/components/ui/HavenImage";
 import type { Property } from "@/components/properties/PropertyCard";
 import {
   getPropertyBySlug,
@@ -384,12 +385,14 @@ export default async function PropertyDetailsPage({
           <div className="lg:col-span-2 space-y-10">
             {/* Overview / Narrative */}
             <div className="space-y-4">
-              <h2 className="font-display text-2xl font-semibold text-primary">
+              <h2 className="font-display text-2xl sm:text-3xl font-semibold text-primary">
                 Architectural Narrative
               </h2>
-              <p className="font-sans text-sm sm:text-base text-muted leading-relaxed whitespace-pre-line">
-                {property.description}
-              </p>
+              <div className="prose prose-neutral max-w-none">
+                <p className="font-sans text-base sm:text-lg text-primary/90 leading-relaxed font-normal">
+                  {property.description}
+                </p>
+              </div>
             </div>
 
             {/* Features & Amenities */}
@@ -432,7 +435,7 @@ export default async function PropertyDetailsPage({
 
           {/* Right Column: Safe Advisor Contact Card */}
           <div className="space-y-6">
-            <div className="sticky top-28 rounded-2xl border border-divider bg-surface p-6 space-y-6 shadow-xs">
+            <div className="sticky top-28 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-thin rounded-2xl border border-divider bg-surface p-6 space-y-6 shadow-xs">
               <h3 className="font-display text-lg font-semibold text-primary">
                 Listing Advisor
               </h3>
@@ -442,11 +445,15 @@ export default async function PropertyDetailsPage({
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
                     {agent.avatar_url ? (
-                      <img
-                        src={agent.avatar_url}
-                        alt={agent.full_name}
-                        className="h-16 w-16 shrink-0 rounded-full object-cover border border-divider shadow-xs"
-                      />
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-divider shadow-xs">
+                        <HavenImage
+                          src={agent.avatar_url}
+                          alt={agent.full_name}
+                          preset="thumbnail"
+                          containerClassName="h-full w-full rounded-full"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
                     ) : (
                       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-secondary/10 font-display text-xl font-bold text-secondary border border-secondary/20">
                         {agent.full_name.charAt(0)}

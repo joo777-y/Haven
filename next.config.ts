@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
         hostname: "afxgijkdaaidklzhwell.supabase.co",
         pathname: "/storage/v1/**",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
     ],
   },
   async headers() {

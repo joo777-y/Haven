@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Building, Phone, Mail, ArrowUpRight } from "lucide-react";
+import { Building, ArrowUpRight } from "lucide-react";
 import Button from "@/components/ui/Button";
+import HavenImage from "@/components/ui/HavenImage";
 
 export interface Agent {
   id: string;
@@ -36,18 +37,19 @@ export default function AgentCard({
         <div className="flex items-start gap-4">
           {/* Avatar Image */}
           <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-divider bg-background">
-            <img
+            <HavenImage
               src={agent.avatar}
               alt={agent.name}
+              preset="thumbnail"
+              containerClassName="h-full w-full rounded-full"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              loading="lazy"
             />
           </div>
 
           {/* Name & Agency */}
           <div className="flex-1 min-w-0">
             <h3 className="font-display text-lg font-semibold text-foreground truncate group-hover:text-secondary transition-colors">
-              <Link href={`/agents/${agent.slug}`}>
+              <Link href={`/agents/${agent.slug}`} className="focus:outline-none focus:underline">
                 <span className="absolute inset-0 z-0" aria-hidden="true" />
                 {agent.name}
               </Link>
@@ -71,17 +73,25 @@ export default function AgentCard({
 
       {/* Footer Actions */}
       <div className="mt-6 pt-4 border-t border-divider/60 flex items-center gap-2 z-10">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full flex items-center justify-center gap-1.5 text-xs"
-          onClick={() => {
-            if (onContactClick) onContactClick(agent.id);
-          }}
-        >
-          <span>Contact Agent</span>
-          <ArrowUpRight className="h-3.5 w-3.5" />
-        </Button>
+        {onContactClick ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full flex items-center justify-center gap-1.5 text-xs"
+            onClick={() => onContactClick(agent.id)}
+          >
+            <span>Contact Agent</span>
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Button>
+        ) : (
+          <Link
+            href={`/agents/${agent.slug}#contact`}
+            className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-md border border-divider bg-surface text-primary hover:border-primary/40 hover:bg-background active:scale-[0.99] transition-all"
+          >
+            <span>Contact Agent</span>
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
       </div>
     </article>
   );

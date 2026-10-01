@@ -115,10 +115,10 @@ export default async function AgentOverviewPage() {
         {/* Active Published Listings */}
         <Link
           href="/agent/properties?status=published"
-          className="group rounded-2xl border border-divider bg-surface p-5 transition-all duration-300 hover:border-emerald-500/40 hover:shadow-card"
+          className="group rounded-2xl border border-divider bg-surface p-5 transition-all duration-300 hover:border-tertiary/40 hover:shadow-card"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-colors shadow-2xs">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-tertiary/10 text-tertiary group-hover:bg-tertiary group-hover:text-white transition-colors shadow-2xs">
               <Building className="h-5 w-5" />
             </div>
             <span className="font-display text-2xl sm:text-3xl font-bold text-foreground">
@@ -140,10 +140,10 @@ export default async function AgentOverviewPage() {
         {/* Drafts & In-Progress */}
         <Link
           href="/agent/properties?status=draft"
-          className="group rounded-2xl border border-divider bg-surface p-5 transition-all duration-300 hover:border-amber-500/40 hover:shadow-card"
+          className="group rounded-2xl border border-divider bg-surface p-5 transition-all duration-300 hover:border-primary/30 hover:shadow-card"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white transition-colors shadow-2xs">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted/10 text-muted group-hover:bg-primary group-hover:text-white transition-colors shadow-2xs">
               <Clock className="h-5 w-5" />
             </div>
             <span className="font-display text-2xl sm:text-3xl font-bold text-foreground">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useTransition } from "react";
+import React, { useState, useCallback, useTransition, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { LayoutGrid, Columns2, Map as MapIcon, X, MapPin } from "lucide-react";
@@ -57,6 +57,35 @@ export default function PropertyCatalogView({
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(
     null
   );
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Smooth hover with intentional delay and leave grace period
+  const handlePropertyHover = useCallback((id: string | null) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+
+    if (id) {
+      // 280ms hover intent ensures deliberate hover before moving map
+      hoverTimeoutRef.current = setTimeout(() => {
+        setSelectedPropertyId(id);
+      }, 280);
+    } else {
+      // 600ms grace period keeps pin in view without instantaneous flicker
+      hoverTimeoutRef.current = setTimeout(() => {
+        setSelectedPropertyId(null);
+      }, 600);
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Check if geographic bounds filter is active in URL
   const hasBoundsFilter = Boolean(
@@ -189,7 +218,7 @@ export default function PropertyCatalogView({
           <PropertyGrid
             properties={properties}
             selectedPropertyId={selectedPropertyId}
-            onPropertyHover={setSelectedPropertyId}
+            onPropertyHover={handlePropertyHover}
           />
           <PropertyPagination
             currentPage={currentPage}
@@ -205,7 +234,7 @@ export default function PropertyCatalogView({
             <PropertyGrid
               properties={properties}
               selectedPropertyId={selectedPropertyId}
-              onPropertyHover={setSelectedPropertyId}
+              onPropertyHover={handlePropertyHover}
               className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-6"
             />
             <PropertyPagination

@@ -2,6 +2,7 @@ import Container from "@/components/layout/Container";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import HavenImage from "@/components/ui/HavenImage";
 import Link from "next/link";
 import { ShieldCheck, Compass, Sparkles, Building2, ArrowRight } from "lucide-react";
 
@@ -34,10 +35,12 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="aspect-[4/3] rounded-3xl overflow-hidden border border-divider bg-background">
-            <img
+          <div className="relative aspect-[4/3] rounded-3xl overflow-hidden border border-divider bg-background shadow-xs">
+            <HavenImage
               src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80"
               alt="HAVEN Architecture"
+              preset="hero"
+              containerClassName="h-full w-full"
               className="h-full w-full object-cover"
             />
           </div>

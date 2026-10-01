@@ -286,7 +286,7 @@ export default function PropertyCatalogMap({
 
       // Custom Luxury Price Pill Marker Element
       const el = document.createElement("div");
-      el.className = `haven-catalog-marker group cursor-pointer transition-all duration-300 ${
+      el.className = `haven-catalog-marker group cursor-pointer transition-all duration-500 ${
         isSelected ? "scale-110 z-30" : "hover:scale-105 z-10"
       }`;
 
@@ -315,7 +315,7 @@ export default function PropertyCatalogMap({
         map.easeTo({
           center: lngLat,
           zoom: Math.max(map.getZoom(), 14),
-          duration: 600,
+          duration: 2900,
         });
       });
 
@@ -329,7 +329,7 @@ export default function PropertyCatalogMap({
       map.fitBounds(bounds, {
         padding: { top: 60, bottom: 60, left: 60, right: 60 },
         maxZoom: 14,
-        duration: 800,
+        duration: 4900,
       });
     }
   }, [validProperties, selectedPropertyId, onSelectProperty]);
@@ -344,7 +344,9 @@ export default function PropertyCatalogMap({
       mapInstanceRef.current.easeTo({
         center: [targetProp.longitude, targetProp.latitude],
         zoom: Math.max(mapInstanceRef.current.getZoom(), 14),
-        duration: 700,
+        duration: 4200, // Slow, elegant, unhurried camera glide (3.2 seconds)
+        easing: (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
+        essential: true,
       });
     }
   }, [selectedPropertyId, validProperties]);

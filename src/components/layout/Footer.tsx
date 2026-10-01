@@ -1,10 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Container from "./Container";
-import { Home, Camera, BookOpen, AtSign } from "lucide-react";
+import { Home, Camera, BookOpen, AtSign, CheckCircle2 } from "lucide-react";
 
 export default function Footer() {
+  const [email, setEmail] = useState("");
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim()) {
+      setIsSubscribed(true);
+      setEmail("");
+    }
+  };
+
   return (
     <footer className="border-t border-divider bg-background pt-16 pb-12">
       <Container>
@@ -18,7 +30,7 @@ export default function Footer() {
               className="font-display text-2xl font-semibold tracking-tight text-primary flex items-center"
             >
               HAVEN
-              <span className="text-secondary ml-1.5 text-base">●</span>
+              <span className="text-secondary ml-1.5 text-base select-none">●</span>
             </Link>
 
             {/* Description */}
@@ -31,19 +43,32 @@ export default function Footer() {
               <h4 className="font-sans text-xs font-bold text-primary tracking-tight">
                 Subscribe to The Architectural Dispatch
               </h4>
-              <form onSubmit={(e) => e.preventDefault()} className="flex items-center max-w-sm">
-                <input
-                  type="email"
-                  placeholder="Enter your email address"
-                  className="w-full rounded-l-xl border border-r-0 border-divider/80 bg-[#eae8e1]/70 px-4 py-3 text-xs text-foreground placeholder:text-muted/70 focus:border-primary focus:outline-none transition-colors"
-                />
-                <button
-                  type="submit"
-                  className="rounded-r-xl bg-primary px-6 py-3 font-sans text-xs font-semibold text-white hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap"
-                >
-                  Join
-                </button>
-              </form>
+
+              {isSubscribed ? (
+                <div className="flex items-center gap-2 rounded-xl border border-secondary/30 bg-secondary/10 px-4 py-3 text-xs font-medium text-secondary">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>Welcome to the Dispatch. You are now subscribed.</span>
+                </div>
+              ) : (
+                <form onSubmit={handleSubscribe} className="flex items-center max-w-sm">
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    aria-label="Email address for newsletter"
+                    className="w-full rounded-l-xl border border-r-0 border-divider/80 bg-[#eae8e1]/70 px-4 py-3 text-xs text-foreground placeholder:text-muted/70 focus:border-primary focus:outline-none transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-r-xl bg-primary px-6 py-3 font-sans text-xs font-semibold text-white hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-secondary/40"
+                  >
+                    Join
+                  </button>
+                </form>
+              )}
+
               <p className="text-[11px] text-muted/70">
                 Discreet monthly insights. No spam.
               </p>
@@ -57,18 +82,23 @@ export default function Footer() {
             </h4>
             <ul className="space-y-3 text-xs font-normal text-muted">
               <li>
-                <Link href="/properties?type=villas" className="hover:text-primary transition-colors">
-                  Modern Villas
+                <Link href="/properties?type=sale&category=villa" className="hover:text-primary transition-colors">
+                  Villas for Sale (Buy)
                 </Link>
               </li>
               <li>
-                <Link href="/properties?type=lofts" className="hover:text-primary transition-colors">
-                  Urban Lofts
+                <Link href="/properties?type=rent&category=villa" className="hover:text-primary transition-colors">
+                  Villas for Rent
                 </Link>
               </li>
               <li>
-                <Link href="/properties?type=coastal" className="hover:text-primary transition-colors">
-                  Coastal Escapes
+                <Link href="/properties?category=penthouse" className="hover:text-primary transition-colors">
+                  Penthouses & Lofts
+                </Link>
+              </li>
+              <li>
+                <Link href="/properties?category=chalet" className="hover:text-primary transition-colors">
+                  Coastal Sanctuaries
                 </Link>
               </li>
             </ul>
@@ -86,13 +116,13 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="hover:text-primary transition-colors">
-                  Careers
+                <Link href="/about#heritage" className="hover:text-primary transition-colors">
+                  Heritage & Mission
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="hover:text-primary transition-colors">
-                  Journal
+                <Link href="/contact" className="hover:text-primary transition-colors">
+                  Advisory Concierge
                 </Link>
               </li>
             </ul>
@@ -130,17 +160,17 @@ export default function Footer() {
             <ul className="space-y-3 text-xs font-normal text-muted">
               <li>
                 <Link href="/properties" className="hover:text-primary transition-colors">
-                  Mortgage Calculator
+                  Property Portfolio
                 </Link>
               </li>
               <li>
                 <Link href="/agents" className="hover:text-primary transition-colors">
-                  Architect Directory
+                  Advisor Directory
                 </Link>
               </li>
               <li>
-                <Link href="/properties" className="hover:text-primary transition-colors">
-                  Market Insights
+                <Link href="/contact" className="hover:text-primary transition-colors">
+                  Private Inquiries
                 </Link>
               </li>
             </ul>
@@ -155,16 +185,40 @@ export default function Footer() {
             <span>Equal Housing Opportunity. Equal Access to Architectural Heritage.</span>
           </div>
 
-          {/* Center: Copyright */}
+          {/* Center: Dynamic Copyright */}
           <div>
-            <span>© 2025 HAVEN Real Estate Platform. All rights reserved.</span>
+            <span>© {new Date().getFullYear()} HAVEN Real Estate Platform. All rights reserved.</span>
           </div>
 
-          {/* Right: Social Icons */}
+          {/* Right: Accessible Social Icons */}
           <div className="flex items-center gap-4">
-            <Camera className="h-4 w-4 text-muted hover:text-primary transition-colors cursor-pointer" />
-            <BookOpen className="h-4 w-4 text-muted hover:text-primary transition-colors cursor-pointer" />
-            <AtSign className="h-4 w-4 text-muted hover:text-primary transition-colors cursor-pointer" />
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="HAVEN on Instagram"
+              className="text-muted hover:text-primary transition-colors p-1"
+            >
+              <Camera className="h-4 w-4" />
+            </a>
+            <a
+              href="https://substack.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="HAVEN Journal on Substack"
+              className="text-muted hover:text-primary transition-colors p-1"
+            >
+              <BookOpen className="h-4 w-4" />
+            </a>
+            <a
+              href="https://threads.net"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="HAVEN on Threads"
+              className="text-muted hover:text-primary transition-colors p-1"
+            >
+              <AtSign className="h-4 w-4" />
+            </a>
           </div>
         </div>
       </Container>

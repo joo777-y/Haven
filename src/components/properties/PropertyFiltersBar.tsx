@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   Search,
@@ -138,6 +138,20 @@ export default function PropertyFiltersBar({
     });
   };
 
+  // Auto-debounce keyword search input changes (400ms)
+  useEffect(() => {
+    const currentQ = (searchParams.get("q") || "").trim();
+    if (searchQuery.trim() === currentQ) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      updateUrlParams({ q: searchQuery.trim() });
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateUrlParams({ q: searchQuery.trim() });
@@ -152,6 +166,104 @@ export default function PropertyFiltersBar({
 
   return (
     <div className="rounded-2xl border border-divider bg-surface p-5 shadow-xs space-y-4">
+      {/* 1. Top Segmented Controls: Listing Type (All / Buy / Rent) & Quick Filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-divider/60">
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-background border border-divider/80 w-fit">
+          <button
+            type="button"
+            onClick={() => updateUrlParams({ type: "all" })}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeType === "all"
+                ? "bg-surface text-primary shadow-xs font-bold"
+                : "text-muted hover:text-primary"
+            }`}
+          >
+            All Residences
+          </button>
+          <button
+            type="button"
+            onClick={() => updateUrlParams({ type: "sale" })}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeType === "sale"
+                ? "bg-primary text-white shadow-xs"
+                : "text-muted hover:text-primary"
+            }`}
+          >
+            For Sale (Buy)
+          </button>
+          <button
+            type="button"
+            onClick={() => updateUrlParams({ type: "rent" })}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeType === "rent"
+                ? "bg-secondary text-white shadow-xs"
+                : "text-muted hover:text-primary"
+            }`}
+          >
+            For Rent
+          </button>
+        </div>
+
+        {/* Quick Category Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none text-xs">
+          <button
+            type="button"
+            onClick={() => updateUrlParams({ category: "all" })}
+            className={`px-3 py-1 rounded-full border text-[11px] font-medium transition-all cursor-pointer shrink-0 ${
+              activeCategory === "all"
+                ? "border-primary bg-primary/10 text-primary font-semibold"
+                : "border-divider/80 text-muted hover:border-primary/40 hover:text-primary"
+            }`}
+          >
+            All Types
+          </button>
+          <button
+            type="button"
+            onClick={() => updateUrlParams({ category: "villa" })}
+            className={`px-3 py-1 rounded-full border text-[11px] font-medium transition-all cursor-pointer shrink-0 ${
+              activeCategory === "villa"
+                ? "border-secondary bg-secondary/15 text-secondary font-bold"
+                : "border-divider/80 text-muted hover:border-secondary/40 hover:text-secondary"
+            }`}
+          >
+            Villas
+          </button>
+          <button
+            type="button"
+            onClick={() => updateUrlParams({ category: "penthouse" })}
+            className={`px-3 py-1 rounded-full border text-[11px] font-medium transition-all cursor-pointer shrink-0 ${
+              activeCategory === "penthouse"
+                ? "border-primary bg-primary/10 text-primary font-semibold"
+                : "border-divider/80 text-muted hover:border-primary/40 hover:text-primary"
+            }`}
+          >
+            Penthouses
+          </button>
+          <button
+            type="button"
+            onClick={() => updateUrlParams({ category: "apartment" })}
+            className={`px-3 py-1 rounded-full border text-[11px] font-medium transition-all cursor-pointer shrink-0 ${
+              activeCategory === "apartment"
+                ? "border-primary bg-primary/10 text-primary font-semibold"
+                : "border-divider/80 text-muted hover:border-primary/40 hover:text-primary"
+            }`}
+          >
+            Apartments
+          </button>
+          <button
+            type="button"
+            onClick={() => updateUrlParams({ category: "chalet" })}
+            className={`px-3 py-1 rounded-full border text-[11px] font-medium transition-all cursor-pointer shrink-0 ${
+              activeCategory === "chalet"
+                ? "border-primary bg-primary/10 text-primary font-semibold"
+                : "border-divider/80 text-muted hover:border-primary/40 hover:text-primary"
+            }`}
+          >
+            Chalets & Coastal
+          </button>
+        </div>
+      </div>
+
       {/* Primary Filter Row */}
       <form onSubmit={handleSearchSubmit} className="space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-12 items-end">
@@ -251,7 +363,7 @@ export default function PropertyFiltersBar({
 
       {/* Advanced Filter Drawer / Secondary Row */}
       {showAdvanced && (
-        <div className="rounded-xl border border-divider/80 bg-background/50 p-4 space-y-4 pt-4 mt-2">
+        <div className="rounded-xl border border-divider/80 bg-background/50 p-4 space-y-4 pt-4 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="text-xs font-semibold uppercase tracking-wider text-muted flex items-center justify-between">
             <span>Detailed Filter Parameters</span>
             <button

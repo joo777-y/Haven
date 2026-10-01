@@ -5,6 +5,7 @@ import Link from "next/link";
 import Container from "@/components/layout/Container";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
+import HavenImage from "@/components/ui/HavenImage";
 import PropertyGrid from "@/components/properties/PropertyGrid";
 import { mockAgents } from "@/data/agents";
 import { mockProperties } from "@/data/properties";
@@ -36,9 +37,11 @@ export default function AgentDetailsPage({
           <div className="flex flex-col md:flex-row items-start gap-8">
             {/* Avatar */}
             <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-full border border-divider bg-background">
-              <img
+              <HavenImage
                 src={agent.avatar}
                 alt={agent.name}
+                preset="thumbnail"
+                containerClassName="h-full w-full rounded-full"
                 className="h-full w-full object-cover"
               />
             </div>
@@ -70,18 +73,20 @@ export default function AgentDetailsPage({
             </div>
 
             {/* Contact Action */}
-            <div className="w-full md:w-auto shrink-0 space-y-3">
-              <a href={`tel:${agent.phone}`}>
-                <Button variant="primary" size="md" className="w-full gap-2">
-                  <Phone className="h-4 w-4" />
-                  <span>Call {agent.phone}</span>
-                </Button>
+            <div id="contact" className="w-full md:w-auto shrink-0 space-y-3">
+              <a
+                href={`tel:${agent.phone}`}
+                className="w-full inline-flex items-center justify-center font-sans font-semibold transition-all duration-200 cursor-pointer bg-primary text-white hover:opacity-90 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/20 px-5 py-2.5 text-sm rounded-lg gap-2"
+              >
+                <Phone className="h-4 w-4" />
+                <span>Call {agent.phone}</span>
               </a>
-              <a href={`mailto:${agent.email}`}>
-                <Button variant="outline" size="md" className="w-full gap-2">
-                  <Mail className="h-4 w-4" />
-                  <span>Email Advisor</span>
-                </Button>
+              <a
+                href={`mailto:${agent.email}`}
+                className="w-full inline-flex items-center justify-center font-sans font-semibold transition-all duration-200 cursor-pointer border border-divider bg-surface text-primary hover:border-primary/40 hover:bg-background active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/20 px-5 py-2.5 text-sm rounded-lg gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                <span>Email Advisor</span>
               </a>
             </div>
           </div>

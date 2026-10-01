@@ -58,17 +58,17 @@ export const mockHomeData: HomeData = {
       id: "test-1",
       quote:
         "HAVEN connected us with an off-market mid-century sanctuary in Palm Springs that exceeded every architectural detail we dreamed of.",
-      author: "Marcus & Elena Thorne",
-      role: "Private Collectors",
-      location: "Beverly Hills, CA",
+      author: "Youssef Hamdy",
+      role: "CEO and Founder of Haven",
+      location: "Cairo, Egypt",
     },
     {
       id: "test-2",
       quote:
         "The level of curation and discretion provided by HAVEN’s network of advisors is unmatched in the luxury residential market.",
-      author: "David Sterling",
+      author: "Ali Anter",
       role: "Architectural Curator",
-      location: "New York, NY",
+      location: "6th Of October, Giza",
     },
   ],
   featuredPropertyIds: ["prop-1", "prop-2", "prop-4"],
