@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -50,6 +50,24 @@ export default function InteractivePropertyGallery({
   const [activeIndex, setActiveIndex] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const userInteractedRef = useRef<boolean>(false);
+  const hasTeasedRef = useRef<boolean>(false);
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const teaserTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const teaserReturnTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const cancelTeaser = useCallback(() => {
+    if (teaserTimeoutRef.current) {
+      clearTimeout(teaserTimeoutRef.current);
+      teaserTimeoutRef.current = null;
+    }
+    if (teaserReturnTimeoutRef.current) {
+      clearTimeout(teaserReturnTimeoutRef.current);
+      teaserReturnTimeoutRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -63,15 +81,68 @@ export default function InteractivePropertyGallery({
     }
   }, []);
 
+  // First view hint animation: when gallery enters view, briefly peek second card,
+  // then glide back to initial card to demonstrate interactive accordion capability
+  useEffect(() => {
+    if (prefersReducedMotion || typeof window === "undefined" || items.length <= 1) {
+      return;
+    }
+
+    const element = containerRef.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !hasTeasedRef.current && !userInteractedRef.current) {
+          hasTeasedRef.current = true;
+
+          // 1. Wait 500ms after entering view so user perceives initial layout
+          teaserTimeoutRef.current = setTimeout(() => {
+            if (userInteractedRef.current) return;
+
+            // 2. Simulated hover: smoothly expand second residence
+            setActiveIndex(1);
+
+            // 3. Return to original residence after 950ms demonstration
+            teaserReturnTimeoutRef.current = setTimeout(() => {
+              if (userInteractedRef.current) return;
+              setActiveIndex(0);
+            }, 950);
+          }, 500);
+
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.25 }
+    );
+
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+      cancelTeaser();
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  }, [items.length, prefersReducedMotion, cancelTeaser]);
+
   const handleNext = useCallback(() => {
+    userInteractedRef.current = true;
+    cancelTeaser();
     setActiveIndex((prev) => (prev + 1) % items.length);
-  }, [items.length]);
+  }, [items.length, cancelTeaser]);
 
   const handlePrev = useCallback(() => {
+    userInteractedRef.current = true;
+    cancelTeaser();
     setActiveIndex((prev) => (prev - 1 + items.length) % items.length);
-  }, [items.length]);
+  }, [items.length, cancelTeaser]);
 
   const handleCardClick = (index: number, slug: string) => {
+    userInteractedRef.current = true;
+    cancelTeaser();
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+
     if (index === activeIndex) {
       // Clicking the active maxi card redirects directly to this villa's page
       router.push(`/properties/${slug}`);
@@ -81,17 +152,36 @@ export default function InteractivePropertyGallery({
     }
   };
 
+  const handleCardHover = (index: number) => {
+    userInteractedRef.current = true;
+    cancelTeaser();
+
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    // 90ms hover intent for swift yet smooth expansion without fluttering
+    hoverTimerRef.current = setTimeout(() => {
+      setActiveIndex(index);
+    }, 90);
+  };
+
+  const handleCardLeave = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  };
+
   const activeProperty = items[activeIndex] || items[0];
 
   return (
     <div
+      ref={containerRef}
       role="region"
       aria-label="Interactive Property Showcase Gallery"
       className={`relative w-full space-y-4 ${className}`}
     >
       {/* ============================================================ */}
       {/* DESKTOP & TABLET ACCORDION (>= 768px)                         */}
-      {/* Horizontal Expandable Flex: Clicked = Maxi, Others = Mini    */}
+      {/* Horizontal Expandable Flex: Hovered/Clicked = Maxi, Others = Mini */}
       {/* ============================================================ */}
       <div className="hidden md:flex h-[520px] lg:h-[580px] w-full gap-3 overflow-hidden rounded-3xl p-1 bg-surface/30">
         {items.map((item, index) => {
@@ -104,9 +194,11 @@ export default function InteractivePropertyGallery({
               tabIndex={0}
               aria-roledescription="slide"
               aria-label={`${item.title} (${index + 1} of ${items.length}). ${
-                isActive ? "Click to view property details" : "Click to expand"
+                isActive ? "Click to view property details" : "Hover or click to expand"
               }`}
               onClick={() => handleCardClick(index, item.slug)}
+              onMouseEnter={() => handleCardHover(index)}
+              onMouseLeave={handleCardLeave}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();

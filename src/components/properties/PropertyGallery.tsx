@@ -1,15 +1,19 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import {
   Building2,
   Maximize2,
-  X,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { getOptimizedImageUrl } from "@/lib/images/getOptimizedImageUrl";
+
+const PropertyLightbox = dynamic(() => import("./PropertyLightbox"), {
+  ssr: false,
+});
 
 interface GalleryImage {
   id?: string;
@@ -135,23 +139,7 @@ export default function PropertyGallery({
     touchEndX.current = null;
   };
 
-  // Keyboard navigation for Lightbox
-  useEffect(() => {
-    if (!isLightboxOpen) return;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsLightboxOpen(false);
-      } else if (e.key === "ArrowLeft") {
-        handlePrev();
-      } else if (e.key === "ArrowRight") {
-        handleNext();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isLightboxOpen, handlePrev, handleNext]);
 
   // Fallback when no images exist
   if (!images || images.length === 0 || (!rawActiveImage && imageError)) {
@@ -278,113 +266,20 @@ export default function PropertyGallery({
         )}
       </div>
 
-      {/* Fullscreen Lightbox Modal */}
+      {/* Fullscreen Lightbox Modal (Dynamically loaded on demand) */}
       {isLightboxOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Photo gallery: ${title}`}
-          className="fixed inset-0 z-[99999] flex flex-col items-center justify-between bg-black/95 p-4 sm:p-6 backdrop-blur-md select-none"
-          onClick={() => setIsLightboxOpen(false)}
-        >
-          {/* Lightbox Header */}
-          <div
-            className="flex w-full items-center justify-between z-20 py-2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-white">
-              <span className="font-display text-sm tracking-wider uppercase opacity-80 block truncate max-w-xs sm:max-w-md">
-                {title}
-              </span>
-              <span className="text-xs text-white/60 font-sans">
-                Photo {selectedIndex + 1} of {sortedImages.length}
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsLightboxOpen(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20 focus:outline-none"
-              aria-label="Close lightbox"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          {/* Main Lightbox Image Viewport */}
-          <div
-            className="relative flex-1 w-full max-w-6xl my-auto flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-          >
-            <div className="relative w-full h-[65vh] sm:h-[75vh]">
-              <Image
-                src={
-                  getOptimizedImageUrl(rawActiveImage, "hero") || activeSrc
-                }
-                alt={`${title} - Fullscreen View ${selectedIndex + 1}`}
-                fill
-                priority
-                unoptimized
-                className="object-contain"
-              />
-            </div>
-
-            {/* Navigation Chevrons */}
-            {sortedImages.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white transition-all hover:bg-white/20 focus:outline-none"
-                  aria-label="Previous photo"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white transition-all hover:bg-white/20 focus:outline-none"
-                  aria-label="Next photo"
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Lightbox Footer Thumbnails */}
-          {sortedImages.length > 1 && (
-            <div
-              className="w-full max-w-2xl overflow-x-auto py-2 flex justify-center gap-2 z-20"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {sortedImages.map((img, idx) => (
-                <button
-                  key={img.id || idx}
-                  type="button"
-                  onClick={() => setSelectedIndex(idx)}
-                  className={`relative h-12 w-16 sm:h-14 sm:w-20 rounded-lg overflow-hidden shrink-0 border transition-all ${
-                    idx === selectedIndex
-                      ? "border-secondary ring-2 ring-secondary/50 opacity-100"
-                      : "border-white/20 opacity-40 hover:opacity-80"
-                  }`}
-                  aria-label={`Jump to photo ${idx + 1}`}
-                >
-                  <Image
-                    src={getOptimizedImageUrl(img.image_url, "thumbnail")}
-                    alt=""
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <PropertyLightbox
+          isOpen={isLightboxOpen}
+          onClose={() => setIsLightboxOpen(false)}
+          images={sortedImages}
+          selectedIndex={selectedIndex}
+          onSelectIndex={(idx) => {
+            setSelectedIndex(idx);
+            setImageError(false);
+          }}
+          title={title}
+          activeSrc={activeSrc}
+        />
       )}
     </>
   );

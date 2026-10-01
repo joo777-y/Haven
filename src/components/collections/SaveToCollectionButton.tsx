@@ -1,10 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { FolderPlus } from "lucide-react";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
-import SaveToCollectionModal from "./SaveToCollectionModal";
+
+const SaveToCollectionModal = dynamic(
+  () => import("./SaveToCollectionModal"),
+  { ssr: false }
+);
 
 interface SaveToCollectionButtonProps {
   propertyId: string;
@@ -59,13 +64,15 @@ export default function SaveToCollectionButton({
         </IconButton>
       )}
 
-      <SaveToCollectionModal
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        propertyId={propertyId}
-        propertyTitle={propertyTitle}
-        onSuccess={onSuccess}
-      />
+      {isOpen && (
+        <SaveToCollectionModal
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+          propertyId={propertyId}
+          propertyTitle={propertyTitle}
+          onSuccess={onSuccess}
+        />
+      )}
     </>
   );
 }

@@ -3,12 +3,20 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Heart, Menu } from "lucide-react";
-import FavoritesModal from "@/components/modals/FavoritesModal";
-import ProfileModal from "@/components/modals/ProfileModal";
 import UserMenu from "@/components/auth/UserMenu";
-import MobileMenu from "./MobileMenu";
 import Container from "./Container";
+
+const FavoritesModal = dynamic(() => import("@/components/modals/FavoritesModal"), {
+  ssr: false,
+});
+const ProfileModal = dynamic(() => import("@/components/modals/ProfileModal"), {
+  ssr: false,
+});
+const MobileMenu = dynamic(() => import("./MobileMenu"), {
+  ssr: false,
+});
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -102,25 +110,31 @@ export default function Header() {
         </Container>
       </header>
 
-      {/* Drawers / Modals */}
-      <FavoritesModal
-        isOpen={isFavoritesOpen}
-        onClose={() => setIsFavoritesOpen(false)}
-      />
+      {/* Drawers / Modals (Lazy-loaded on first user interaction) */}
+      {isFavoritesOpen && (
+        <FavoritesModal
+          isOpen={isFavoritesOpen}
+          onClose={() => setIsFavoritesOpen(false)}
+        />
+      )}
 
-      <ProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-      />
+      {isProfileOpen && (
+        <ProfileModal
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+        />
+      )}
 
-      <MobileMenu
-        isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
-        pathname={pathname}
-        navLinks={navLinks}
-        onOpenFavorites={() => setIsFavoritesOpen(true)}
-        onOpenProfile={() => setIsProfileOpen(true)}
-      />
+      {isMobileMenuOpen && (
+        <MobileMenu
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
+          pathname={pathname}
+          navLinks={navLinks}
+          onOpenFavorites={() => setIsFavoritesOpen(true)}
+          onOpenProfile={() => setIsProfileOpen(true)}
+        />
+      )}
     </>
   );
 }

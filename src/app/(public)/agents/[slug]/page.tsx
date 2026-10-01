@@ -1,23 +1,47 @@
-"use client";
-
-import { use } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import Container from "@/components/layout/Container";
-import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import HavenImage from "@/components/ui/HavenImage";
 import PropertyGrid from "@/components/properties/PropertyGrid";
 import { mockAgents } from "@/data/agents";
 import { mockProperties } from "@/data/properties";
-import { ArrowLeft, Building, Phone, Mail, Award, Briefcase, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Phone, Mail } from "lucide-react";
 
-export default function AgentDetailsPage({
-  params,
-}: {
+interface AgentDetailsPageProps {
   params: Promise<{ slug: string }>;
-}) {
-  const { slug } = use(params);
-  const agent = mockAgents.find((a) => a.slug === slug) || mockAgents[0];
+}
+
+export async function generateMetadata({
+  params,
+}: AgentDetailsPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const agent = mockAgents.find((a) => a.slug === slug);
+
+  if (!agent) {
+    return {
+      title: "Advisor Not Found | HAVEN",
+      description: "The requested architectural advisor could not be found.",
+    };
+  }
+
+  return {
+    title: `${agent.name} — ${agent.title} | HAVEN`,
+    description: agent.bio.slice(0, 160),
+  };
+}
+
+export default async function AgentDetailsPage({
+  params,
+}: AgentDetailsPageProps) {
+  const { slug } = await params;
+  const agent = mockAgents.find((a) => a.slug === slug);
+
+  if (!agent) {
+    notFound();
+  }
+
   const agentProperties = mockProperties.filter((p) => p.agentId === agent.id);
 
   return (

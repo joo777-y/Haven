@@ -45,7 +45,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // 2. Protected Agent Routes: /agent/* (except /agent/register which can be accessed to onboard)
-  if (!user && pathname.startsWith("/agent")) {
+  if (!user && (pathname === "/agent" || pathname.startsWith("/agent/"))) {
     const redirectUrl = new URL("/auth/login", request.url);
     redirectUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(redirectUrl);
