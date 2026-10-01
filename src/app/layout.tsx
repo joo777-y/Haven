@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import HavenIntro from "@/components/layout/HavenIntro";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -30,6 +31,7 @@ export default function RootLayout({
       className={`${playfair.variable} ${jakarta.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <HavenIntro />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

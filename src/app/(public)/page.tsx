@@ -4,7 +4,7 @@ import Container from "@/components/layout/Container";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import HeroSearchBar from "@/components/home/HeroSearchBar";
+import HeroSection, { type HeroPropertyItem } from "@/components/home/HeroSection";
 import PropertyGrid from "@/components/properties/PropertyGrid";
 import LifestyleCard, {
   type LifestyleCategory,
@@ -216,54 +216,55 @@ export default async function Home() {
     mockHomeData.featuredAgentIds.includes(a.id)
   );
 
+  // --------------------------------------------------------------------------
+  // HERO SHOWCASE: 3 Premier Architectural Showcase Residences
+  // --------------------------------------------------------------------------
+  const heroShowcaseProperties: HeroPropertyItem[] = showcaseSelected.slice(0, 3).map((p: any) => {
+    const isDb = "property_images" in p;
+    const rawCoverUrl = isDb ? getCoverImageUrl(p.property_images) : p.image;
+    const coverUrl = getOptimizedImageUrl(rawCoverUrl, "hero");
+    const formattedPrice = isDb
+      ? formatPropertyPrice(Number(p.price), p.listing_type)
+      : p.price;
+    const formattedArea = isDb && p.area ? formatPropertyArea(p.area) : p.area;
+    const locationStr = isDb
+      ? [p.neighborhood, p.city, p.country].filter(Boolean).join(", ")
+      : p.location;
+
+    return {
+      id: p.id,
+      title: p.title,
+      slug: p.slug,
+      price: formattedPrice,
+      location: locationStr,
+      city: p.city,
+      image: coverUrl,
+      beds: p.bedrooms ?? (p.beds || null),
+      baths: p.bathrooms ?? (p.baths || null),
+      area: formattedArea,
+      badge: isDb
+        ? p.property_type === "villa"
+          ? "Private Architectural Villa"
+          : p.property_type === "chalet"
+          ? "Coastal Sanctuary"
+          : "Featured Residence"
+        : p.badge || "Featured Residence",
+      listingType: p.listing_type || p.listingType || "sale",
+      propertyType: p.property_type || p.propertyType || "villa",
+      tagline: `${p.city || "Sanctuary"} · Architectural Masterpiece`,
+    };
+  });
+
   return (
     <div className="space-y-24 pb-20">
-      {/* Hero Section */}
-      <section className="relative min-h-[85vh] flex flex-col justify-between pt-12 pb-16 overflow-hidden bg-[#f3f1eb]">
-        {/* Subtle Background Pattern & Glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(#c26d45_1px,transparent_1px)] [background-size:32px_32px] opacity-[0.15]" />
-        
-        <Container className="relative z-10 flex flex-col items-center text-center my-auto pt-8">
-          <Badge variant="secondary" size="md" className="mb-6 tracking-widest uppercase">
-            {mockHomeData.hero.tagline}
-          </Badge>
-
-          <h1 className="max-w-4xl font-display text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-primary leading-[1.1]">
-            {mockHomeData.hero.headline}
-          </h1>
-
-          <p className="mt-6 max-w-2xl font-sans text-base sm:text-lg leading-relaxed text-muted">
-            {mockHomeData.hero.subheadline}
-          </p>
-
-          {/* Hero Search Bar */}
-          <div className="mt-10 w-full flex justify-center">
-            <HeroSearchBar />
-          </div>
-        </Container>
-
-        {/* Stats Strip */}
-        <Container className="relative z-10 mt-16 pt-8 border-t border-divider/60">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            {mockHomeData.stats.map((stat, idx) => (
-              <div key={idx} className="space-y-1">
-                <span className="font-display text-3xl sm:text-4xl font-bold text-primary">
-                  {stat.value}
-                </span>
-                <h4 className="font-sans text-xs font-bold text-secondary uppercase tracking-wider">
-                  {stat.label}
-                </h4>
-                <p className="text-[11px] text-muted max-w-[180px] mx-auto hidden sm:block">
-                  {stat.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Container>
-      </section>
+      {/* Redesigned Architectural Hero Section */}
+      <HeroSection
+        showcaseProperties={heroShowcaseProperties}
+        stats={mockHomeData.stats}
+      />
 
       {/* Interactive Architectural Showcase Gallery */}
-      <section className="-mt-8">
+      <section>
         <Container>
           <SectionHeading
             subtitle="Interactive Showcase"

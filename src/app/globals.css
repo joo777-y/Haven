@@ -70,3 +70,76 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-body);
 }
+
+/* ==========================================================================
+   HAVEN Cinematic Brand Intro Animations
+   ========================================================================== */
+@keyframes havenOverlayOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes havenContentFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes havenDividerScale {
+  0% {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.animate-haven-overlay-out {
+  animation: havenOverlayOut 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-haven-content-logo {
+  animation: havenContentFadeUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+}
+
+.animate-haven-content-title {
+  animation: havenContentFadeUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.28s both;
+}
+
+.animate-haven-content-sub {
+  animation: havenContentFadeUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.42s both;
+}
+
+.animate-haven-content-divider {
+  animation: havenDividerScale 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.52s both;
+}
+
+.animate-haven-content-quote {
+  animation: havenContentFadeUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.62s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-haven-overlay-out,
+  .animate-haven-content-logo,
+  .animate-haven-content-title,
+  .animate-haven-content-sub,
+  .animate-haven-content-divider,
+  .animate-haven-content-quote {
+    animation-duration: 0.25s !important;
+    animation-delay: 0s !important;
+    transform: none !important;
+  }
+}
