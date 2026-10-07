@@ -6,10 +6,7 @@ import PropertyFiltersBar from "@/components/properties/PropertyFiltersBar";
 import PropertyCatalogView from "@/components/properties/PropertyCatalogView";
 import RecentlyViewedTray from "@/components/properties/RecentlyViewedTray";
 import Button from "@/components/ui/Button";
-import {
-  getPublishedProperties,
-  getUserFavoritePropertyIds,
-} from "@/lib/properties/queries";
+import { getPublishedProperties } from "@/lib/properties/queries";
 import { parseFilterParams } from "@/lib/validations/property";
 import { formatPropertyCardData } from "@/types/property";
 import type { Property } from "@/components/properties/PropertyCard";
@@ -31,18 +28,12 @@ export default async function PropertiesPage({
   const rawParams = await searchParams;
   const filters = parseFilterParams(rawParams);
 
-  // Parallel server queries: catalog and batch user favorite IDs (no N+1)
-  const [paginatedResult, userFavoriteIds] = await Promise.all([
-    getPublishedProperties(filters),
-    getUserFavoritePropertyIds(),
-  ]);
+  // Fetch published properties via public client (zero cookie dependency)
+  const paginatedResult = await getPublishedProperties(filters);
 
-  const favoriteIdSet = new Set(userFavoriteIds);
-
-  // Transform database composite objects into UI presentation card items with coordinates
+  // Transform database composite objects into UI presentation card items (default isSaved: false)
   const cardProperties: Property[] = paginatedResult.data.map((item) => {
-    const isSaved = favoriteIdSet.has(item.id);
-    const formatted = formatPropertyCardData(item, isSaved);
+    const formatted = formatPropertyCardData(item, false);
     return {
       id: formatted.id,
       title: formatted.title,
@@ -59,7 +50,7 @@ export default async function PropertiesPage({
       agent: formatted.agent,
       latitude: formatted.latitude,
       longitude: formatted.longitude,
-      isSaved,
+      isSaved: false,
     };
   });
 

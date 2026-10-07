@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useCallback, useTransition, useRef, useEffect } from "react";
+import React, { useState, useCallback, useTransition, useRef, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { LayoutGrid, Columns2, Map as MapIcon, X, MapPin } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { createClient } from "@/lib/supabase/client";
 import PropertyGrid from "./PropertyGrid";
 import PropertyPagination from "./PropertyPagination";
 import type { Property } from "./PropertyCard";
@@ -58,6 +60,49 @@ export default function PropertyCatalogView({
     null
   );
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Client-side favorites reconciliation for authenticated users (0 requests for anonymous)
+  const { user } = useAuth();
+  const [userFavoriteIds, setUserFavoriteIds] = useState<Set<string> | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setUserFavoriteIds(null);
+      return;
+    }
+
+    const supabase = createClient();
+    supabase
+      .from("favorites")
+      .select("property_id")
+      .eq("user_id", user.id)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setUserFavoriteIds(new Set(data.map((f) => f.property_id)));
+        }
+      });
+  }, [user]);
+
+  // Reconcile card isSaved states without mutating server props
+  const reconciledProperties = useMemo(() => {
+    if (!userFavoriteIds || userFavoriteIds.size === 0) return properties;
+    return properties.map((p) => ({
+      ...p,
+      isSaved: userFavoriteIds.has(p.id),
+    }));
+  }, [properties, userFavoriteIds]);
+
+  const handleSaveToggle = useCallback((id: string) => {
+    setUserFavoriteIds((prev) => {
+      const next = new Set(prev ?? []);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
 
   // Smooth hover with intentional delay and leave grace period
   const handlePropertyHover = useCallback((id: string | null) => {
@@ -216,9 +261,10 @@ export default function PropertyCatalogView({
       {viewMode === "list" && (
         <div className="space-y-8">
           <PropertyGrid
-            properties={properties}
+            properties={reconciledProperties}
             selectedPropertyId={selectedPropertyId}
             onPropertyHover={handlePropertyHover}
+            onSaveToggle={handleSaveToggle}
           />
           <PropertyPagination
             currentPage={currentPage}
@@ -232,9 +278,10 @@ export default function PropertyCatalogView({
           {/* Left Column: Property List */}
           <div className="lg:col-span-7 xl:col-span-7 space-y-6">
             <PropertyGrid
-              properties={properties}
+              properties={reconciledProperties}
               selectedPropertyId={selectedPropertyId}
               onPropertyHover={handlePropertyHover}
+              onSaveToggle={handleSaveToggle}
               className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-6"
             />
             <PropertyPagination
@@ -246,7 +293,7 @@ export default function PropertyCatalogView({
           {/* Right Column: Sticky Interactive Catalog Map */}
           <div className="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-24 h-[520px] lg:h-[calc(100vh-140px)] rounded-2xl overflow-hidden border border-divider shadow-card">
             <PropertyCatalogMap
-              properties={properties}
+              properties={reconciledProperties}
               selectedPropertyId={selectedPropertyId}
               onSelectProperty={setSelectedPropertyId}
               onSearchArea={handleSearchArea}
@@ -259,7 +306,7 @@ export default function PropertyCatalogView({
       {viewMode === "map" && (
         <div className="relative w-full h-[650px] lg:h-[calc(100vh-200px)] rounded-2xl overflow-hidden border border-divider shadow-lg">
           <PropertyCatalogMap
-            properties={properties}
+            properties={reconciledProperties}
             selectedPropertyId={selectedPropertyId}
             onSelectProperty={setSelectedPropertyId}
             onSearchArea={handleSearchArea}

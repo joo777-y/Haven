@@ -2,6 +2,27 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/types/database";
 
+/**
+ * Creates an anonymous, read-only Supabase client for public queries.
+ * Does NOT access cookies(), enabling static prerendering and ISR.
+ */
+export function createPublicClient() {
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return [];
+        },
+        setAll() {
+          // No-op for read-only public queries
+        },
+      },
+    }
+  );
+}
+
 export async function createClient() {
   const cookieStore = await cookies();
 

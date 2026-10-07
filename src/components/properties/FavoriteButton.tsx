@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import { Heart, Loader2 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -31,6 +31,11 @@ export default function FavoriteButton({
   const [isSaved, setIsSaved] = useState(initialIsSaved);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  // Reconcile when parent updates initialIsSaved (e.g. client favorites reconciliation)
+  useEffect(() => {
+    setIsSaved(initialIsSaved);
+  }, [initialIsSaved]);
 
   const handleToggle = (e: React.MouseEvent) => {
     e.preventDefault();

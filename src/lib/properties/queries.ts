@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { cache } from "react";
+import { createClient, createPublicClient } from "@/lib/supabase/server";
 import {
   PropertyWithDetails,
   PropertyFilters,
@@ -50,13 +51,49 @@ export const PROPERTY_DETAILS_SELECT = `
 ` as const;
 
 /**
+ * Optimized PostgREST select query string specifically for catalog and card listings.
+ * Excludes heavy columns (descriptions, street addresses), unused relations (property_features),
+ * and projects image and agent fields strictly to card presentation requirements.
+ */
+export const PROPERTY_CARD_SELECT = `
+  id,
+  title,
+  slug,
+  price,
+  city,
+  country,
+  neighborhood,
+  bedrooms,
+  bathrooms,
+  area,
+  listing_type,
+  property_type,
+  status,
+  latitude,
+  longitude,
+  created_at,
+  property_images (
+    image_url,
+    sort_order,
+    is_cover
+  ),
+  agents_public (
+    id,
+    full_name,
+    avatar_url,
+    company_name,
+    professional_title
+  )
+` as const;
+
+/**
  * Fetches published properties with multi-parameter filtering and pagination.
  * Used by the public catalog page (/properties).
  */
 export async function getPublishedProperties(
   filters: PropertyFilters = {}
 ): Promise<PaginatedProperties> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const page = Math.max(1, filters.page || 1);
   const limit = Math.min(50, Math.max(1, filters.limit || 12));
@@ -65,7 +102,7 @@ export async function getPublishedProperties(
 
   let query = supabase
     .from("properties")
-    .select(PROPERTY_DETAILS_SELECT, { count: "exact" })
+    .select(PROPERTY_CARD_SELECT, { count: "exact" })
     .eq("status", "published");
 
   // Keyword search across title, city, neighborhood
@@ -201,33 +238,33 @@ export async function getPublishedProperties(
  * Fetches an individual published property by slug (or UUID).
  * Embeds images, features, and public agent advisor info.
  */
-export async function getPropertyBySlug(
-  slugOrId: string
-): Promise<PropertyWithDetails | null> {
-  const supabase = await createClient();
+export const getPropertyBySlug = cache(
+  async (slugOrId: string): Promise<PropertyWithDetails | null> => {
+    const supabase = await createClient();
 
-  const isUuid = UUID_REGEX.test(slugOrId);
+    const isUuid = UUID_REGEX.test(slugOrId);
 
-  let query = supabase
-    .from("properties")
-    .select(PROPERTY_DETAILS_SELECT)
-    .eq("status", "published");
+    let query = supabase
+      .from("properties")
+      .select(PROPERTY_DETAILS_SELECT)
+      .eq("status", "published");
 
-  if (isUuid) {
-    query = query.or(`slug.eq.${slugOrId},id.eq.${slugOrId}`);
-  } else {
-    query = query.eq("slug", slugOrId);
+    if (isUuid) {
+      query = query.or(`slug.eq.${slugOrId},id.eq.${slugOrId}`);
+    } else {
+      query = query.eq("slug", slugOrId);
+    }
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) {
+      console.error(`Error fetching property by slug (${slugOrId}):`, error);
+      return null;
+    }
+
+    return (data as unknown as PropertyWithDetails) || null;
   }
-
-  const { data, error } = await query.maybeSingle();
-
-  if (error) {
-    console.error(`Error fetching property by slug (${slugOrId}):`, error);
-    return null;
-  }
-
-  return (data as unknown as PropertyWithDetails) || null;
-}
+);
 
 /**
  * Rule-based recommendation engine for similar architectural properties.

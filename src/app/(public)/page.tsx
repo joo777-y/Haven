@@ -28,6 +28,8 @@ import { mockAgents } from "@/data/agents";
 
 import { getOptimizedImageUrl } from "@/lib/images/getOptimizedImageUrl";
 
+export const revalidate = 60;
+
 export default async function Home() {
   // Fetch real published properties from Supabase
   let dbProperties: PropertyWithDetails[] = [];
