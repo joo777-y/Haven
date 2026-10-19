@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Container from "@/components/layout/Container";
 import SectionHeading from "@/components/ui/SectionHeading";
 import AgentDirectory from "@/components/agents/AgentDirectory";
-import { mockAgents } from "@/data/agents";
+import { getPublicAgents } from "@/lib/agent/queries";
 
 export const metadata: Metadata = {
   title: "Advisory Network & Brokers | HAVEN",
@@ -10,7 +10,11 @@ export const metadata: Metadata = {
     "Connect with seasoned advisors specializing in luxury acquisitions, architectural preservation, and private sales.",
 };
 
-export default function AgentsPage() {
+export const revalidate = 60;
+
+export default async function AgentsPage() {
+  const agents = await getPublicAgents();
+
   return (
     <div className="py-12 space-y-10">
       <Container>
@@ -20,7 +24,7 @@ export default function AgentsPage() {
           description="Connect with seasoned advisors specializing in luxury acquisitions, architectural preservation, and private sales."
         />
 
-        <AgentDirectory initialAgents={mockAgents} />
+        <AgentDirectory initialAgents={agents} />
       </Container>
     </div>
   );

@@ -160,7 +160,7 @@ export function formatPropertyPrice(price: number, listingType: ListingType = "s
     maximumFractionDigits: 0,
   }).format(price);
 
-  return listingType === "rent" ? `${formatted}/month` : formatted;
+  return listingType === "rent" ? `${formatted}` : formatted;
 }
 
 /**

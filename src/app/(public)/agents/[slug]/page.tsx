@@ -5,9 +5,10 @@ import Container from "@/components/layout/Container";
 import Badge from "@/components/ui/Badge";
 import HavenImage from "@/components/ui/HavenImage";
 import PropertyGrid from "@/components/properties/PropertyGrid";
-import { mockAgents } from "@/data/agents";
-import { mockProperties } from "@/data/properties";
+import { getPublicAgentById, getAgentPublishedProperties } from "@/lib/agent/queries";
 import { ArrowLeft, Phone, Mail } from "lucide-react";
+
+export const revalidate = 60;
 
 interface AgentDetailsPageProps {
   params: Promise<{ slug: string }>;
@@ -17,7 +18,7 @@ export async function generateMetadata({
   params,
 }: AgentDetailsPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const agent = mockAgents.find((a) => a.slug === slug);
+  const agent = await getPublicAgentById(slug);
 
   if (!agent) {
     return {
@@ -28,7 +29,16 @@ export async function generateMetadata({
 
   return {
     title: `${agent.name} — ${agent.title} | HAVEN`,
-    description: agent.bio.slice(0, 160),
+    description:
+      agent.bio?.slice(0, 160) ||
+      `Licensed architectural advisor at ${agent.agency}.`,
+    openGraph: {
+      title: `${agent.name} — ${agent.title} | HAVEN`,
+      description:
+        agent.bio?.slice(0, 160) ||
+        `Licensed architectural advisor at ${agent.agency}.`,
+      images: agent.avatar ? [{ url: agent.avatar }] : [],
+    },
   };
 }
 
@@ -36,13 +46,22 @@ export default async function AgentDetailsPage({
   params,
 }: AgentDetailsPageProps) {
   const { slug } = await params;
-  const agent = mockAgents.find((a) => a.slug === slug);
+  const agent = await getPublicAgentById(slug);
 
   if (!agent) {
     notFound();
   }
 
-  const agentProperties = mockProperties.filter((p) => p.agentId === agent.id);
+  // Fetch real published properties assigned to this advisor
+  const agentProperties = await getAgentPublishedProperties(agent.id);
+
+  // Derive specialties dynamically from the advisor's published property types and cities
+  const specialties = Array.from(
+    new Set([
+      ...agentProperties.map((p) => p.propertyType),
+      ...agentProperties.map((p) => p.location.split(",")[0]?.trim()),
+    ].filter(Boolean))
+  ).slice(0, 4);
 
   return (
     <div className="py-12 space-y-12">
@@ -83,56 +102,72 @@ export default async function AgentDetailsPage({
                 {agent.title} • <span className="text-secondary font-medium">{agent.agency}</span>
               </p>
 
-              <p className="font-sans text-sm text-muted/90 leading-relaxed max-w-2xl pt-2">
-                {agent.bio}
-              </p>
+              {agent.bio && (
+                <p className="font-sans text-sm text-muted/90 leading-relaxed max-w-2xl pt-2">
+                  {agent.bio}
+                </p>
+              )}
 
-              <div className="flex flex-wrap gap-2 pt-2">
-                {agent.specialties.map((spec, idx) => (
-                  <Badge key={idx} variant="outline" size="sm">
-                    {spec}
-                  </Badge>
-                ))}
-              </div>
+              {specialties.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {specialties.map((spec, idx) => (
+                    <Badge key={idx} variant="outline" size="sm">
+                      {spec}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Contact Action */}
             <div id="contact" className="w-full md:w-auto shrink-0 space-y-3">
-              <a
-                href={`tel:${agent.phone}`}
-                className="w-full inline-flex items-center justify-center font-sans font-semibold transition-all duration-200 cursor-pointer bg-primary text-white hover:opacity-90 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/20 px-5 py-2.5 text-sm rounded-lg gap-2"
-              >
-                <Phone className="h-4 w-4" />
-                <span>Call {agent.phone}</span>
-              </a>
-              <a
-                href={`mailto:${agent.email}`}
-                className="w-full inline-flex items-center justify-center font-sans font-semibold transition-all duration-200 cursor-pointer border border-divider bg-surface text-primary hover:border-primary/40 hover:bg-background active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/20 px-5 py-2.5 text-sm rounded-lg gap-2"
-              >
-                <Mail className="h-4 w-4" />
-                <span>Email Advisor</span>
-              </a>
+              {agent.phone ? (
+                <a
+                  href={`tel:${agent.phone}`}
+                  className="w-full inline-flex items-center justify-center font-sans font-semibold transition-all duration-200 cursor-pointer bg-primary text-white hover:opacity-90 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/20 px-5 py-2.5 text-sm rounded-lg gap-2"
+                >
+                  <Phone className="h-4 w-4" />
+                  <span>Call {agent.phone}</span>
+                </a>
+              ) : null}
+              {agent.email ? (
+                <a
+                  href={`mailto:${agent.email}`}
+                  className="w-full inline-flex items-center justify-center font-sans font-semibold transition-all duration-200 cursor-pointer border border-divider bg-surface text-primary hover:border-primary/40 hover:bg-background active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/20 px-5 py-2.5 text-sm rounded-lg gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  <span>Email Advisor</span>
+                </a>
+              ) : (
+                <Link
+                  href="/contact"
+                  className="w-full inline-flex items-center justify-center font-sans font-semibold transition-all duration-200 cursor-pointer bg-primary text-white hover:opacity-90 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/20 px-5 py-2.5 text-sm rounded-lg gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  <span>Contact Advisor</span>
+                </Link>
+              )}
             </div>
           </div>
 
           {/* Stats Bar */}
-          <div className="pt-8 border-t border-divider/60 grid grid-cols-3 gap-4 text-center">
+          <div className="pt-8 border-t border-divider/60 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
             <div>
-              <span className="text-xs text-muted block">Experience</span>
+              <span className="text-xs text-muted block">Advisory Status</span>
               <span className="font-display text-xl font-bold text-primary">
-                {agent.experienceYears} Years
+                Licensed Partner
               </span>
             </div>
             <div>
-              <span className="text-xs text-muted block">Career Sales</span>
+              <span className="text-xs text-muted block">Portfolio Focus</span>
               <span className="font-display text-xl font-bold text-primary">
-                {agent.salesVolume}
+                Luxury Architectural
               </span>
             </div>
             <div>
               <span className="text-xs text-muted block">Active Listings</span>
               <span className="font-display text-xl font-bold text-primary">
-                {agent.listingCount} Properties
+                {agentProperties.length} Properties
               </span>
             </div>
           </div>
@@ -143,7 +178,18 @@ export default async function AgentDetailsPage({
           <h2 className="font-display text-2xl font-semibold text-primary">
             Active Properties by {agent.name}
           </h2>
-          <PropertyGrid properties={agentProperties} />
+          {agentProperties.length > 0 ? (
+            <PropertyGrid properties={agentProperties} />
+          ) : (
+            <div className="rounded-2xl border border-dashed border-divider bg-surface/50 p-12 text-center space-y-2">
+              <p className="font-display text-base font-semibold text-foreground">
+                No active public properties
+              </p>
+              <p className="text-xs text-muted">
+                This advisor currently has no active published listings.
+              </p>
+            </div>
+          )}
         </div>
       </Container>
     </div>

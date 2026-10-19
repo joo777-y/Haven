@@ -24,21 +24,25 @@ import {
 import type { Property } from "@/components/properties/PropertyCard";
 import { mockHomeData } from "@/data/home";
 import { mockProperties } from "@/data/properties";
-import { mockAgents } from "@/data/agents";
+import { getPublicAgents } from "@/lib/agent/queries";
 
 import { getOptimizedImageUrl } from "@/lib/images/getOptimizedImageUrl";
 
 export const revalidate = 60;
 
 export default async function Home() {
-  // Fetch real published properties from Supabase
-  let dbProperties: PropertyWithDetails[] = [];
-  try {
-    const result = await getPublishedProperties({ limit: 30 });
-    dbProperties = result.data;
-  } catch (err) {
-    console.error("Error fetching homepage properties from Supabase:", err);
-  }
+  // Fetch real published properties and public agents from Supabase (zero cookies)
+  const [propertyResult, featuredAgents] = await Promise.all([
+    getPublishedProperties({ limit: 30 }).catch((err) => {
+      console.error("Error fetching homepage properties from Supabase:", err);
+      return { data: [], count: 0, page: 1, limit: 30, totalPages: 0 };
+    }),
+    getPublicAgents({ limit: 3 }).catch((err) => {
+      console.error("Error fetching homepage agents from Supabase:", err);
+      return [];
+    }),
+  ]);
+  const dbProperties = propertyResult.data;
 
   // --------------------------------------------------------------------------
   // SECTION 1: Interactive Showcase Gallery (5 Luxury Villas & Chalets)
@@ -214,10 +218,6 @@ export default async function Home() {
     },
   ];
 
-  const featuredAgents = mockAgents.filter((a) =>
-    mockHomeData.featuredAgentIds.includes(a.id)
-  );
-
   // --------------------------------------------------------------------------
   // HERO SHOWCASE: 3 Premier Architectural Showcase Residences
   // --------------------------------------------------------------------------
@@ -342,11 +342,22 @@ export default async function Home() {
             }
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredAgents.map((agent) => (
-              <AgentCard key={agent.id} agent={agent} />
-            ))}
-          </div>
+          {featuredAgents.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {featuredAgents.map((agent) => (
+                <AgentCard key={agent.id} agent={agent} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-divider bg-surface/50 p-12 text-center space-y-2">
+              <p className="font-display text-base font-semibold text-foreground">
+                Advisory Portfolio Updating
+              </p>
+              <p className="text-xs text-muted max-w-md mx-auto">
+                Our network of licensed architectural advisors and private brokers is currently being refreshed.
+              </p>
+            </div>
+          )}
         </Container>
       </section>
 

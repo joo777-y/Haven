@@ -44,28 +44,13 @@ export function getOptimizedImageUrl(
   try {
     const resizeMode = options.resize ?? "cover";
 
-    // 1. Supabase standard storage object URL
-    // Format: .../storage/v1/object/public/<bucket>/<path>
-    if (url.includes("/storage/v1/object/public/")) {
-      const transformUrl = new URL(
-        url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/")
-      );
-      if (options.width) transformUrl.searchParams.set("width", options.width.toString());
-      if (options.height) transformUrl.searchParams.set("height", options.height.toString());
-      if (options.quality) transformUrl.searchParams.set("quality", options.quality.toString());
-      transformUrl.searchParams.set("resize", resizeMode);
-      return transformUrl.toString();
-    }
-
-    // 2. Supabase already-transformed storage URL
-    // Format: .../storage/v1/render/image/public/<bucket>/<path>
+    // 1. Supabase Storage: Use standard public object URL
+    // Prevents HTTP 403 (FeatureNotEnabled) returned by /render/image/ on Supabase Free Tier.
     if (url.includes("/storage/v1/render/image/public/")) {
-      const transformUrl = new URL(url);
-      if (options.width) transformUrl.searchParams.set("width", options.width.toString());
-      if (options.height) transformUrl.searchParams.set("height", options.height.toString());
-      if (options.quality) transformUrl.searchParams.set("quality", options.quality.toString());
-      transformUrl.searchParams.set("resize", resizeMode);
-      return transformUrl.toString();
+      return url.replace("/storage/v1/render/image/public/", "/storage/v1/object/public/").split("?")[0];
+    }
+    if (url.includes("/storage/v1/object/public/")) {
+      return url.split("?")[0];
     }
 
     // 3. Unsplash URLs
