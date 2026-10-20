@@ -91,7 +91,6 @@ export default function UserMenu() {
               fill
               sizes="28px"
               className="object-cover"
-              unoptimized
             />
           ) : (
             userInitials

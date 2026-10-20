@@ -25,6 +25,7 @@ export default function HavenImage({
   sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
   priority = false,
   fill = true,
+  unoptimized = false,
   ...props
 }: HavenImageProps) {
   const [hasError, setHasError] = useState(false);
@@ -62,7 +63,7 @@ export default function HavenImage({
         fill={fill}
         sizes={sizes}
         priority={priority}
-        unoptimized
+        unoptimized={unoptimized}
         onError={() => setHasError(true)}
         onLoad={() => setIsLoading(false)}
         className={`object-cover transition-opacity duration-300 ${

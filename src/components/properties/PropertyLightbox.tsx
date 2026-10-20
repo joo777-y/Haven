@@ -137,7 +137,7 @@ export default function PropertyLightbox({
             alt={`${title} - Fullscreen View ${selectedIndex + 1}`}
             fill
             priority
-            unoptimized
+            sizes="100vw"
             className="object-contain"
           />
         </div>
@@ -187,7 +187,7 @@ export default function PropertyLightbox({
                 src={getOptimizedImageUrl(img.image_url, "thumbnail")}
                 alt=""
                 fill
-                unoptimized
+                sizes="64px"
                 className="object-cover"
               />
             </button>

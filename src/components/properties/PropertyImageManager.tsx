@@ -22,6 +22,7 @@ import {
   reorderPropertyImagesAction,
   deletePropertyImageAction,
 } from "@/lib/properties/actions";
+import { compressImage } from "@/lib/images/compressImage";
 
 interface PropertyImageManagerProps {
   propertyId: string;
@@ -60,7 +61,15 @@ export default function PropertyImageManager({
     const errors: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+      const originalFile = files[i];
+
+      // Pre-compress and downscale image in browser before uploading to Supabase
+      const file = await compressImage(originalFile, {
+        maxWidth: 2048,
+        maxHeight: 2048,
+        quality: 0.82,
+        mimeType: "image/webp",
+      });
 
       // Validate size (< 10MB)
       if (file.size > 10 * 1024 * 1024) {
@@ -281,7 +290,6 @@ export default function PropertyImageManager({
                   src={img.image_url}
                   alt={`Property image ${idx + 1}`}
                   fill
-                  unoptimized
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />

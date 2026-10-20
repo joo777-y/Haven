@@ -85,8 +85,8 @@ export default function AgentProfileForm({
     const file = e.target.files?.[0];
     if (!file || !userId) return;
 
-    if (file.size > 3 * 1024 * 1024) {
-      setError("Avatar image must be smaller than 3MB.");
+    if (file.size > 15 * 1024 * 1024) {
+      setError("Avatar image must be smaller than 15MB.");
       return;
     }
 
@@ -178,7 +178,6 @@ export default function AgentProfileForm({
                 fill
                 sizes="112px"
                 className="object-cover"
-                unoptimized
               />
             ) : (
               userInitials

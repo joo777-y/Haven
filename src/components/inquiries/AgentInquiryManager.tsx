@@ -260,7 +260,6 @@ export default function AgentInquiryManager({
                               src={coverUrl}
                               alt={property?.title || "Property image"}
                               fill
-                              unoptimized
                               sizes="80px"
                               className="object-cover"
                             />

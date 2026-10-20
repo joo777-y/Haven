@@ -225,7 +225,6 @@ export default function InteractivePropertyGallery({
                 }
                 alt={item.title}
                 fill
-                unoptimized
                 loading={index === 0 ? "eager" : "lazy"}
                 sizes={
                   isActive
@@ -464,7 +463,6 @@ export default function InteractivePropertyGallery({
                 }
                 alt={item.title}
                 fill
-                unoptimized
                 loading={index === 0 ? "eager" : "lazy"}
                 sizes="100vw"
                 className={`object-cover transition-transform duration-500 ${

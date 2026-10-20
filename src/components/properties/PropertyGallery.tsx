@@ -64,7 +64,6 @@ function GalleryThumbnail({
         src={src}
         alt={`${title} thumbnail ${idx + 1}`}
         fill
-        unoptimized
         sizes="120px"
         className="object-cover"
         onError={() => {
@@ -180,7 +179,6 @@ export default function PropertyGallery({
               alt={`${title} - View ${selectedIndex + 1}`}
               fill
               priority
-              unoptimized
               onError={() => {
                 if (activeSrc !== rawActiveImage && rawActiveImage) {
                   setActiveSrc(rawActiveImage);

@@ -28,9 +28,9 @@ export default function ProfileForm() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate size (< 3MB)
-    if (file.size > 3 * 1024 * 1024) {
-      setError("Avatar image must be smaller than 3MB.");
+    // Validate size (< 15MB)
+    if (file.size > 15 * 1024 * 1024) {
+      setError("Avatar image must be smaller than 15MB.");
       return;
     }
 
@@ -115,7 +115,6 @@ export default function ProfileForm() {
                 fill
                 sizes="80px"
                 className="object-cover"
-                unoptimized
               />
             ) : (
               userInitials

@@ -411,7 +411,6 @@ export default function PropertyCatalogMap({
                   alt={activePreview.title}
                   fill
                   sizes="320px"
-                  unoptimized
                   className="object-cover"
                 />
               ) : (

@@ -85,7 +85,6 @@ export default async function UserInquiriesPage() {
                           src={coverUrl}
                           alt={property?.title || "Property"}
                           fill
-                          unoptimized
                           sizes="80px"
                           className="object-cover"
                         />
